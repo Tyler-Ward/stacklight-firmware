@@ -1,6 +1,8 @@
 
 #include <stdint.h>
 
+#pragma pack(push, 1)
+
 typedef struct
 {
     uint8_t subStartCode;
@@ -30,6 +32,7 @@ typedef struct
     uint8_t parameterData[];
 } rdm_sub_message_t;
 
+#pragma pack(pop)
 
 int processRdm(rdm_t* rdm);
 int rdm_generate_nack_reason(rdm_sub_message_t* recieved, uint16_t reason);

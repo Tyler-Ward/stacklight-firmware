@@ -1,12 +1,16 @@
 
 #include "rdm.h"
-#include <Arduino.h>
 #include "settings.h"
 #include "version.h"
+#include "stdio.h"
+#include "esp_log.h"
+#include <string.h>
 
 uint8_t rdm_responce_buffer[52];
 bool broadcast=false;
 uint8_t identify_mode;
+
+static const char *TAG = "rdm_proc";
 
 //flips the order of the butes in a 16 bit value
 static inline uint16_t flipbyteorder(uint16_t pid)
@@ -24,6 +28,7 @@ int processRdm(rdm_t* rdmin)
     //ignore any message outside of start code 0x01
     if(rdmin->subStartCode!=RDM_SC_SUB_MESSAGE)
     {
+        ESP_LOGW(TAG, "WRONG START CODE");
         return(0);
     }
     rdm_sub_message_t* rdm = (rdm_sub_message_t *) rdmin;
@@ -43,17 +48,23 @@ int processRdm(rdm_t* rdmin)
         }
         else
         {
+            ESP_LOGW(TAG, "WRONG ADDR");
             return(0);
         }
     }
 
+    ESP_LOGI(TAG, "pid : %04x",rdm->parameterID);
+
     //if a sub device is addressed then return an nack
     if(rdm->subDevice!=0x0000)
     {
+        ESP_LOGI(TAG, "pid : %04x",rdm->subDevice);
         return(rdm_generate_nack_reason(rdm, RDM_NR_SUB_DEVICE_OUT_OF_RANGE));
     }
 
     uint16_t parameterID = flipbyteorder(rdm->parameterID);
+
+    ESP_LOGI(TAG, "pid : %04x",parameterID);
 
     if(parameterID == RDM_SUPPORTED_PARAMETERS)
     {
@@ -63,7 +74,7 @@ int processRdm(rdm_t* rdmin)
             return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
         }
 
-        Serial.println("GET_SUPORTED_PARAMS");
+        ESP_LOGI(TAG, "GET_SUPORTED_PARAMS");
 
         //raise a format error nack if data is provided
         if(rdm->parameterDataLength!=0x00)
@@ -114,7 +125,7 @@ int processRdm(rdm_t* rdmin)
             return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
         }
 
-        Serial.println("GET_DEVICE_INFO");
+        ESP_LOGI(TAG, "GET_DEVICE_INFO");
 
         //raise a format error nack if data is provided
         if(rdm->parameterDataLength!=0x00)
@@ -179,7 +190,7 @@ int processRdm(rdm_t* rdmin)
             return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
         }
 
-        Serial.println("model description");
+        ESP_LOGI(TAG, "model description");
 
         //raise a format error nack if data is provided
         if(rdm->parameterDataLength!=0x00)
@@ -199,7 +210,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
         rdmout->parameterID=flipbyteorder(RDM_DEVICE_MODEL_DESCRIPTION);
-        int namelen = sprintf(rdmout->parameterData,"PoE Stack Light");
+        int namelen = sprintf((char*)rdmout->parameterData,"PoE Stack Light");
         rdmout->parameterDataLength=namelen;
         return(finalisePacket(rdmout));
 
@@ -212,7 +223,7 @@ int processRdm(rdm_t* rdmin)
         {
             return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
         }
-        Serial.println("Manufacturer label");
+        ESP_LOGI(TAG, "Manufacturer label");
 
         //raise a format error nack if data is provided
         if(rdm->parameterDataLength!=0x00)
@@ -233,7 +244,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
         rdmout->parameterID=flipbyteorder(RDM_MANUFACTURER_LABEL);
-        int namelen = sprintf(rdmout->parameterData,"Tyler Ward");
+        int namelen = sprintf((char*)rdmout->parameterData,"Tyler Ward");
         rdmout->parameterDataLength=namelen;
         return(finalisePacket(rdmout));
 
@@ -246,7 +257,7 @@ int processRdm(rdm_t* rdmin)
         {
             return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
         }
-        Serial.println("software_version_label");
+        ESP_LOGI(TAG, "software_version_label");
 
         //raise a format error nack if data is provided
         if(rdm->parameterDataLength!=0x00)
@@ -267,7 +278,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
         rdmout->parameterID=flipbyteorder(RDM_SOFTWARE_VERSION_LABEL);
-        int namelen = sprintf(rdmout->parameterData, SOFTWARE_VERSION_STRING);
+        int namelen = sprintf((char*)rdmout->parameterData, SOFTWARE_VERSION_STRING);
         rdmout->parameterDataLength=namelen;
         return(finalisePacket(rdmout));
 
@@ -341,7 +352,7 @@ int processRdm(rdm_t* rdmin)
         {
             return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
         }
-        Serial.println("personality desc");
+        ESP_LOGI(TAG, "personality desc");
 
         //raise a format error nack if no data is provided
         if(rdm->parameterDataLength!=0x01)
@@ -372,7 +383,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->parameterData[1]=0x00;
         rdmout->parameterData[2]=0x04;
 
-        int namelen = sprintf(&rdmout->parameterData[3],"Default 4ch");
+        int namelen = sprintf((char*) &rdmout->parameterData[3],"Default 4ch");
         rdmout->parameterDataLength=3+namelen;
 
         return(finalisePacket(rdmout));
@@ -452,7 +463,7 @@ int processRdm(rdm_t* rdmin)
         {
             return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
         }
-        Serial.println("slot info");
+        ESP_LOGI(TAG, "slot info");
 
         //raise a format error nack if no data is provided
         if(rdm->parameterDataLength!=0x00)
@@ -523,13 +534,13 @@ int processRdm(rdm_t* rdmin)
             identify_mode=rdm->parameterData[0];
             if(identify_mode)
             {
-                Serial.println("identify on");
-                digitalWrite(13, HIGH);
+                ESP_LOGI(TAG, "identify on");
+                //digitalWrite(13, HIGH);
             }
             else
             {
-                Serial.println("identify off");
-                digitalWrite(13, LOW);
+                ESP_LOGI(TAG, "identify off");
+                //digitalWrite(13, LOW);
             }
 
             //confirm write
@@ -574,6 +585,8 @@ int processRdm(rdm_t* rdmin)
             return(finalisePacket(rdmout));
         }
     }
+
+    ESP_LOGW(TAG, "UNKNOWN PID");
 
 
     //send a nack

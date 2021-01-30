@@ -14,6 +14,8 @@ int artnetReplyLen();
 #define LongNameLength 64
 #define MaxNumPorts 4
 
+#pragma pack(push, 1)
+
 typedef struct {
   uint8_t ID[8];               // protocol ID = "Art-Net"
   uint16_t OpCode;             // == OpOutput
@@ -135,6 +137,8 @@ typedef struct {
     uint8_t spare[4];
     uint16_t Data[16];
 } artnet_rdm_sub_t;
+
+#pragma pack(pop)
 
 // artnet OpCodes
 

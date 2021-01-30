@@ -1,9 +1,17 @@
 
 #include "artnet.h"
-#include <Arduino.h>
+
+#include "string.h"
+#include "stdio.h"
+#include "esp_log.h"
+
 #include "rdm.h"
 #include "settings.h"
 #include "version.h"
+
+#include "output.h"
+
+static const char *TAG = "artnet";
 
 const char artnet_id[] = "Art-Net";
 int replylen = 0;
@@ -32,11 +40,12 @@ int process_frame(uint8_t* packet, unsigned int length)
                 return ARTNET_ACTION_NONE;
 
             uint16_t dmxIndex = settingsGetDmxAddr() - 1;
+            SetOutputsDMX(dmxIndex, dmx->Data);
             //Serial.println("Recieved data");
-            analogWrite(3,dmx->Data[dmxIndex]);
-            analogWrite(5,dmx->Data[dmxIndex+1]);
-            analogWrite(6,dmx->Data[dmxIndex+2]);
-            analogWrite(9,dmx->Data[dmxIndex+3]);
+            //analogWrite(3,dmx->Data[dmxIndex]);
+            //analogWrite(5,dmx->Data[dmxIndex+1]);
+            //analogWrite(6,dmx->Data[dmxIndex+2]);
+            //analogWrite(9,dmx->Data[dmxIndex+3]);
             return ARTNET_ACTION_NONE;
             break;
         }
@@ -53,14 +62,14 @@ int process_frame(uint8_t* packet, unsigned int length)
         case Artnet_OpTodRequest:
         case Artnet_OpTodControl:
         {
-            Serial.println("RDM Discover");
+            ESP_LOGI(TAG, "RDM Discover");
             create_artTodData(packet);
             return ARTNET_ACTION_SEND_REPLY;
         }
 
         case Artnet_OpRdm:
         {
-            //Serial.println("RDM packet");
+            ESP_LOGI(TAG, "RDM packet");
 
             artnet_rdm_t* artrdm = (artnet_rdm_t *) packet;
 
@@ -77,8 +86,7 @@ int process_frame(uint8_t* packet, unsigned int length)
         }
 
         default:
-            Serial.print("discarded packet with code:");
-            Serial.println(packetHeader->OpCode);
+            ESP_LOGI(TAG, "discarded packet with code: %02x", packetHeader->OpCode);
             return ARTNET_ACTION_NONE;
         break;
     }
@@ -95,8 +103,8 @@ void create_artpollReply(uint8_t* buffer)
     reply->OpCode = Artnet_OpPollReply;     // poll reply packet
     reply->IPAddr[0] = 192;
     reply->IPAddr[1] = 168;
-    reply->IPAddr[2] = 0;
-    reply->IPAddr[3] = 17;
+    reply->IPAddr[2] = 178;
+    reply->IPAddr[3] = 191;
     reply->port = 0x1936;                   // Port 6454
     reply->VersionInfoHi = (SOFTWARE_REVISION>>8)&0xFF;
     reply->VersionInfoLo = (SOFTWARE_REVISION)&0xFF;
@@ -190,6 +198,7 @@ void create_artTodData(uint8_t* buffer)
     replylen=sizeof(artnet_tod_data_t)-6;
 }
 
+
 void create_artrdm(uint8_t* buffer, int rdmlen)
 {
     //convert buffer into a reply structure
@@ -209,3 +218,4 @@ void create_artrdm(uint8_t* buffer, int rdmlen)
 
     replylen=sizeof(artnet_rdm_t)-32+rdmlen;
 }
+
