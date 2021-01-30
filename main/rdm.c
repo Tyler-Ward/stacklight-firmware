@@ -6,6 +6,8 @@
 #include "esp_log.h"
 #include <string.h>
 
+#include "product_ids.h"
+
 uint8_t rdm_responce_buffer[52];
 bool broadcast=false;
 uint8_t identify_mode;
@@ -35,9 +37,9 @@ int processRdm(rdm_t* rdmin)
     //todo check Checksum
 
     //check for broadcast
-    uint8_t addr[]={0x7f,0xf0,0x00,0x00,0x00,0x00};
+    uint8_t addr[]={(ESTA_ID>>8)&0xff,(ESTA_ID)&0xff,0x00,0x00,0x00,0x00};
     uint8_t addr_broadcast[]={0xff,0xff,0xff,0xff,0xff,0xff};
-    uint8_t addr_manufacturer_broadcast[]={0x7f,0xf0,0xff,0xff,0xff,0xff};
+    uint8_t addr_manufacturer_broadcast[]={(ESTA_ID>>8)&0xff,(ESTA_ID)&0xff,0xff,0xff,0xff,0xff};
     broadcast=false;
     if(memcmp(rdm->destination,addr,6))
     {
@@ -52,8 +54,6 @@ int processRdm(rdm_t* rdmin)
             return(0);
         }
     }
-
-    ESP_LOGI(TAG, "pid : %04x",rdm->parameterID);
 
     //if a sub device is addressed then return an nack
     if(rdm->subDevice!=0x0000)

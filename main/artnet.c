@@ -9,6 +9,8 @@
 #include "settings.h"
 #include "version.h"
 
+#include "product_ids.h"
+
 #include "output.h"
 
 static const char *TAG = "artnet";
@@ -110,8 +112,8 @@ void create_artpollReply(uint8_t* buffer)
     reply->VersionInfoLo = (SOFTWARE_REVISION)&0xFF;
     reply->NetSwitch = 0;
     reply->SubSwitch = 0;                   //universe 0
-    reply->OemHi = 0;
-    reply->OemLo = 0xff;                    // artnet OEM code
+    reply->OemHi = (ARTNET_OEM_CODE>>8)&0xff;
+    reply->OemLo = (ARTNET_OEM_CODE)&0xff;  // artnet OEM code
     reply->UbeaVersion = 0;                 // no UBEA is avaliable
 
     uint8_t status = 0;
@@ -120,8 +122,8 @@ void create_artpollReply(uint8_t* buffer)
     status |= 0x02;     // RDM support
     reply->status = status;
 
-    reply->EstaManHi=0x00;
-    reply->EstaManLo=0x00;
+    reply->EstaManLo=(ESTA_ID)&0xFF;
+    reply->EstaManHi=(ESTA_ID>>8)&0xFF;
     memset(reply->ShortName,0x00,ShortNameLength);
     memset(reply->LongName,0x00,LongNameLength);
     memset(reply->NodeReport,0x00,LongNameLength);
@@ -160,7 +162,11 @@ void create_artpollReply(uint8_t* buffer)
 
     uint8_t status2 = 0;
     status2 |= 0x01;    //web browser config
+    status2 |= 0x02;    //node is DHCP configured
+    status2 |= 0x04;    //node is DCHP capable
     status2 |= 0x08;    //supports 15 bit address
+    reply->Status2 = status2;
+
     memset(reply->Filler,0x00,sizeof(reply->Filler));
     replylen=sizeof(artnet_poll_reply_t);
 
@@ -188,8 +194,8 @@ void create_artTodData(uint8_t* buffer)
     reply->BlockCount=0x00;
     reply->UidCount=0x01;
     memset(reply->Tod,0x00,sizeof(reply->Tod));
-    reply->Tod[0][0]=0x7F;
-    reply->Tod[0][1]=0xF0;
+    reply->Tod[0][0]=(ESTA_ID>>8)&0xff;
+    reply->Tod[0][1]=(ESTA_ID)&0xff;
     reply->Tod[0][2]=0x00;
     reply->Tod[0][3]=0x00;
     reply->Tod[0][4]=0x00;

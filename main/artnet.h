@@ -50,8 +50,8 @@ typedef struct {
   uint8_t OemLo;
   uint8_t UbeaVersion;
   uint8_t status;
-  uint8_t EstaManHi;
   uint8_t EstaManLo;
+  uint8_t EstaManHi;
   char ShortName[ShortNameLength];
   char LongName[LongNameLength];
   char NodeReport[LongNameLength];
