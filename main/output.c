@@ -15,7 +15,7 @@ ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_1,
         .duty       = 0,
-        .gpio_num   = (32),
+        .gpio_num   = (13),
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .hpoint     = 0,
         .timer_sel  = LEDC_TIMER_1
@@ -23,7 +23,7 @@ ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_2,
         .duty       = 0,
-        .gpio_num   = (16),
+        .gpio_num   = (32),
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .hpoint     = 0,
         .timer_sel  = LEDC_TIMER_1
@@ -31,7 +31,7 @@ ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_3,
         .duty       = 0,
-        .gpio_num   = (15),
+        .gpio_num   = (14),
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .hpoint     = 0,
         .timer_sel  = LEDC_TIMER_1
@@ -43,6 +43,7 @@ void SetOutputsDMX(uint16_t offset, uint8_t* data)
     ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,data[offset]*32,0);
     ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,data[offset+1]*32,0);
     ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,data[offset+2]*32,0);
+    ledc_set_duty_and_update(ledc_channel[3].speed_mode,ledc_channel[3].channel,data[offset+3]*32,0);
 }
 
 void SetupOutputs()
