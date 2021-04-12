@@ -18,6 +18,9 @@ static const char *TAG = "artnet";
 const char artnet_id[] = "Art-Net";
 int replylen = 0;
 
+uint8_t ipv4_address[4] = {0,0,0,0};
+uint8_t mac_address[6] = {0xDE,0xAD,0xBE,0xEF,0xFE,0xED};
+
 int artnetReplyLen()
 {
     return replylen;
@@ -44,10 +47,6 @@ int process_frame(uint8_t* packet, unsigned int length)
             uint16_t dmxIndex = settingsGetDmxAddr() - 1;
             SetOutputsDMX(dmxIndex, dmx->Data);
             //Serial.println("Recieved data");
-            //analogWrite(3,dmx->Data[dmxIndex]);
-            //analogWrite(5,dmx->Data[dmxIndex+1]);
-            //analogWrite(6,dmx->Data[dmxIndex+2]);
-            //analogWrite(9,dmx->Data[dmxIndex+3]);
             return ARTNET_ACTION_NONE;
             break;
         }
@@ -103,10 +102,10 @@ void create_artpollReply(uint8_t* buffer)
 
     memcpy(reply->ID,artnet_id,8);          // copy artnet id string
     reply->OpCode = Artnet_OpPollReply;     // poll reply packet
-    reply->IPAddr[0] = 192;
-    reply->IPAddr[1] = 168;
-    reply->IPAddr[2] = 178;
-    reply->IPAddr[3] = 191;
+    reply->IPAddr[0] = ipv4_address[0];
+    reply->IPAddr[1] = ipv4_address[1];
+    reply->IPAddr[2] = ipv4_address[2];
+    reply->IPAddr[3] = ipv4_address[3];
     reply->port = 0x1936;                   // Port 6454
     reply->VersionInfoHi = (SOFTWARE_REVISION>>8)&0xFF;
     reply->VersionInfoLo = (SOFTWARE_REVISION)&0xFF;
@@ -151,12 +150,12 @@ void create_artpollReply(uint8_t* buffer)
     reply->Spare2 = 0x00;
     reply->Spare3 = 0x00;
     reply->Style = ARTNET_ST_NODE;
-    reply->MacAddress[0] = 0xDE;
-    reply->MacAddress[1] = 0xAD;
-    reply->MacAddress[2] = 0xBE;
-    reply->MacAddress[3] = 0xEF;
-    reply->MacAddress[4] = 0xFE;
-    reply->MacAddress[5] = 0xED;
+    reply->MacAddress[0] = mac_address[0];
+    reply->MacAddress[1] = mac_address[1];
+    reply->MacAddress[2] = mac_address[2];
+    reply->MacAddress[3] = mac_address[3];
+    reply->MacAddress[4] = mac_address[4];
+    reply->MacAddress[5] = mac_address[5];
     memcpy(reply->BindIp,reply->IPAddr,4);
     reply->BindIndex = 0x01;
 
@@ -223,5 +222,15 @@ void create_artrdm(uint8_t* buffer, int rdmlen)
     memcpy(reply->RdmPacket,rdmgetBuffer(),rdmlen);
 
     replylen=sizeof(artnet_rdm_t)-32+rdmlen;
+}
+
+void setIpAddress(uint8_t* address)
+{
+    memcpy(ipv4_address,address,4);
+}
+
+void setMacAddress(uint8_t* address)
+{
+    memcpy(mac_address,address,6);
 }
 

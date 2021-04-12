@@ -9,6 +9,8 @@ void create_artpollReply(uint8_t* buffer);
 void create_artTodData(uint8_t* buffer);
 void create_artrdm(uint8_t* buffer, int rdmlen);
 int artnetReplyLen();
+void setIpAddress(uint8_t* address);
+void setMacAddress(uint8_t* address);
 
 #define ShortNameLength 18
 #define LongNameLength 64

@@ -69,6 +69,9 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
     ESP_LOGI(TAG, "ETHMASK:" IPSTR, IP2STR(&ip_info->netmask));
     ESP_LOGI(TAG, "ETHGW:" IPSTR, IP2STR(&ip_info->gw));
     ESP_LOGI(TAG, "~~~~~~~~~~~");
+
+    //load the issued IP address into the artnet module (used in artnet poll replies)
+    setIpAddress((uint8_t*)&ip_info->ip.addr);
 }
 
 static void artnet_server_task(void *pvParameters)
@@ -184,6 +187,14 @@ void app_main()
     ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
     /* start Ethernet driver state machine */
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
+
+    //load the issued MAC address into the artnet module (used in artnet poll replies)
+    uint8_t macAddress[6];
+    if( mac->get_addr(mac,macAddress) != ESP_OK)
+    {
+        ESP_LOGE(TAG,"Failed to read MAC address");
+    }
+    setMacAddress(macAddress);
 
     xTaskCreate(artnet_server_task, "artnet", 4096, NULL, 5, NULL);
 }
