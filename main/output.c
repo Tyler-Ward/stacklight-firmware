@@ -2,6 +2,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/ledc.h"
+#include <string.h>
+
+#include "esp_log.h"
+static const char *TAG = "output";
 
 ledc_channel_config_t ledc_channel[4] = {
     {
@@ -44,6 +48,41 @@ void SetOutputsDMX(uint16_t offset, uint8_t* data)
     ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,data[offset+1]*32,0);
     ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,data[offset+2]*32,0);
     ledc_set_duty_and_update(ledc_channel[3].speed_mode,ledc_channel[3].channel,data[offset+3]*32,0);
+}
+
+typedef struct
+{
+    const char *modeName;
+    int red;
+    int yellow;
+    int green;
+} out_mode_t;
+
+static out_mode_t modes[] = {
+    {"off",0,0,0},
+    {"red",255*32,0,0},
+    {"yellow",0,255*32,0},
+    {"green",0,0,255*32},
+    {"all",255*32,255*32,255*32},
+    {0x00,0,0,0}
+};
+
+void SetOutputsMode(char* mode)
+{
+    int i = 0;
+    while(modes[i].modeName)
+    {
+        if(strcmp(modes[i].modeName,mode)==0)
+        {
+            ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,modes[i].red,0);
+            ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,modes[i].yellow,0);
+            ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,modes[i].green,0);
+            ledc_set_duty_and_update(ledc_channel[3].speed_mode,ledc_channel[3].channel,0,0);
+            return;
+        }
+        i++;
+    }
+    ESP_LOGW(TAG, "No supported mode: %s", mode);
 }
 
 void SetupOutputs()
