@@ -26,16 +26,18 @@ static const char *TAG = "eth_example";
 static void eth_event_handler(void *arg, esp_event_base_t event_base,
                               int32_t event_id, void *event_data)
 {
-    uint8_t mac_addr[6] = {0};
+    uint8_t macAddr[6] = {0};
     /* we can get the ethernet driver handle from event data */
     esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
 
     switch (event_id) {
     case ETHERNET_EVENT_CONNECTED:
-        esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
+        esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, macAddr);
         ESP_LOGI(TAG, "Ethernet Link Up");
         ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
-                 mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+                 macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]);
+        //load the issued MAC address into the artnet module (used in artnet poll replies)
+        setMacAddress(macAddr);
         break;
     case ETHERNET_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "Ethernet Link Down");
@@ -151,6 +153,11 @@ void app_main()
 
     SetupOutputs();
 
+    //set base mac address from factory set address
+    uint8_t baseMac[6];
+    esp_efuse_mac_get_default(baseMac);
+    esp_base_mac_addr_set(baseMac);
+
     // Initialize TCP/IP network interface (should be called only once in application)
     ESP_ERROR_CHECK(esp_netif_init());
     // Create default event loop that running in background
@@ -183,13 +190,6 @@ void app_main()
     /* start Ethernet driver state machine */
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 
-    //load the issued MAC address into the artnet module (used in artnet poll replies)
-    uint8_t macAddress[6];
-    if( mac->get_addr(mac,macAddress) != ESP_OK)
-    {
-        ESP_LOGE(TAG,"Failed to read MAC address");
-    }
-    setMacAddress(macAddress);
 
     xTaskCreate(artnet_server_task, "artnet", 4096, NULL, 5, NULL);
     setup_web_server();
