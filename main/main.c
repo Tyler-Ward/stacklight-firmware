@@ -16,6 +16,7 @@
 
 #include "driver/gpio.h"
 
+#include "settings.h"
 #include "artnet.h"
 #include "http.h"
 #include "output.h"
@@ -152,6 +153,7 @@ void app_main()
 {
 
     SetupOutputs();
+    settingsSetup();
 
     //set base mac address from factory set address
     uint8_t baseMac[6];
@@ -189,7 +191,6 @@ void app_main()
     ESP_ERROR_CHECK(esp_netif_attach(eth_netif, esp_eth_new_netif_glue(eth_handle)));
     /* start Ethernet driver state machine */
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
-
 
     xTaskCreate(artnet_server_task, "artnet", 4096, NULL, 5, NULL);
     setup_web_server();
