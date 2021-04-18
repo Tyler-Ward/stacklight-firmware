@@ -19,7 +19,7 @@ const char artnet_id[] = "Art-Net";
 int replylen = 0;
 
 uint8_t ipv4_address[4] = {0,0,0,0};
-uint8_t mac_address[6] = {0xDE,0xAD,0xBE,0xEF,0xFE,0xED};
+uint8_t mac_address[6] = {0,0,0,0,0,0};
 
 int artnetReplyLen()
 {

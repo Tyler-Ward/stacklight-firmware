@@ -11,8 +11,6 @@ nvs_handle_t nvsHandle;
 //variables to store cached values
 static uint16_t dmxAddr = 1;
 
-
-
 void settingsSetup()
 {
     esp_err_t err = nvs_flash_init();

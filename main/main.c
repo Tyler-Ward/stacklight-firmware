@@ -20,6 +20,7 @@
 #include "artnet.h"
 #include "http.h"
 #include "output.h"
+#include "indicators.h"
 
 static const char *TAG = "eth_example";
 
@@ -39,9 +40,11 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base,
                  macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]);
         //load the issued MAC address into the artnet module (used in artnet poll replies)
         setMacAddress(macAddr);
+        indicatorsSetNetwork(1);
         break;
     case ETHERNET_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "Ethernet Link Down");
+        indicatorsSetNetwork(0);
         break;
     case ETHERNET_EVENT_START:
         ESP_LOGI(TAG, "Ethernet Started");
@@ -152,6 +155,8 @@ static void artnet_server_task(void *pvParameters)
 void app_main()
 {
 
+    indicatorsSetup();
+    indicatorsSetStatus(1);
     SetupOutputs();
     settingsSetup();
 

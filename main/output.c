@@ -5,13 +5,16 @@
 #include <string.h>
 
 #include "esp_log.h"
+
+#include "hardware.h"
+
 static const char *TAG = "output";
 
 ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_0,
         .duty       = 0,
-        .gpio_num   = (33),
+        .gpio_num   = (GPIO_OUTPUT_RED),
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .hpoint     = 0,
         .timer_sel  = LEDC_TIMER_1
@@ -19,7 +22,7 @@ ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_1,
         .duty       = 0,
-        .gpio_num   = (13),
+        .gpio_num   = (GPIO_OUTPUT_YELLOW),
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .hpoint     = 0,
         .timer_sel  = LEDC_TIMER_1
@@ -27,7 +30,7 @@ ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_2,
         .duty       = 0,
-        .gpio_num   = (32),
+        .gpio_num   = (GPIO_OUTPUT_GREEN),
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .hpoint     = 0,
         .timer_sel  = LEDC_TIMER_1
@@ -35,7 +38,7 @@ ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_3,
         .duty       = 0,
-        .gpio_num   = (14),
+        .gpio_num   = (GPIO_OUTPUT_BUZZER),
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .hpoint     = 0,
         .timer_sel  = LEDC_TIMER_1
@@ -87,8 +90,6 @@ void SetOutputsMode(char* mode)
 
 void SetupOutputs()
 {
-    //light test
-    int ch;
 
     ledc_timer_config_t ledc_timer = {
         .duty_resolution = LEDC_TIMER_13_BIT,
@@ -108,19 +109,4 @@ void SetupOutputs()
     ledc_channel_config(&ledc_channel[3]);
 
     ledc_fade_func_install(0);
-    /*
-    while(1){
-
-        for (ch = 0; ch < 4; ch++) {
-            ledc_set_fade_with_time(ledc_channel[ch].speed_mode,ledc_channel[ch].channel, 8191, 3000);
-            ledc_fade_start(ledc_channel[ch].speed_mode,ledc_channel[ch].channel, LEDC_FADE_NO_WAIT);
-            vTaskDelay(3000 / portTICK_PERIOD_MS);
-
-            ledc_set_fade_with_time(ledc_channel[ch].speed_mode,ledc_channel[ch].channel, 0, 3000);
-            ledc_fade_start(ledc_channel[ch].speed_mode,ledc_channel[ch].channel, LEDC_FADE_NO_WAIT);
-
-            vTaskDelay(3000 / portTICK_PERIOD_MS);
-        }
-    }
-    */
 }
