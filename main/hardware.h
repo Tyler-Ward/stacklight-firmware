@@ -15,3 +15,12 @@
 #define GPIO_OUTPUT_YELLOW 13  //!< GPIO pin for the yellow output channel
 #define GPIO_OUTPUT_GREEN 32   //!< GPIO pin for the green output channel
 #define GPIO_OUTPUT_BUZZER 14  //!< GPIO pin for the buzzer output channel
+
+// network pins
+
+#define	GPIO_PHY_POWER 12  //!< GPIO pin for Ethernet PHY power enable
+#define	GPIO_ETH_MDC 23    //!< GPIO pin for the Ethernet PHY MDC pin
+#define	GPIO_ETH_MDIO 18   //!< GPIO pin for the Ethernet PHY MDIO pin
+#define	GPIO_ETH_RESET -1 //!< GPIO pin for the Ethernet PHY reset pin (not present)
+
+#define ETH_PHY_ADDR 0 //!< Address of the ethernet PHY
