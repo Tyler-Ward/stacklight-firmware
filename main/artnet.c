@@ -37,16 +37,23 @@ int process_frame(uint8_t* packet, unsigned int length)
     //switch based on oppcode
     switch(packetHeader->OpCode)
     {
+        /*
+         * DMX data packet
+         */
         case Artnet_OpDmx:
         {
             ardnet_dmx_t* dmx = (ardnet_dmx_t*) packet;
 
-            if(dmx->Net!=0x00 || dmx->SubUni!=0x00)
+            // check the dmx packet has the correct address
+            if(dmx->Net!=settingsGetArtnetNet() 
+                || dmx->SubUni!=(settingsGetArtnetSubNet()<<4)+settingsGetArtnetUniverse())
+            {
                 return ARTNET_ACTION_NONE;
+            }
 
             uint16_t dmxIndex = settingsGetDmxAddr() - 1;
             SetOutputsDMX(dmxIndex, dmx->Data);
-            //Serial.println("Recieved data");
+
             return ARTNET_ACTION_NONE;
             break;
         }
@@ -58,6 +65,58 @@ int process_frame(uint8_t* packet, unsigned int length)
           return ARTNET_ACTION_SEND_REPLY;
 
           break;
+        }
+
+        /*
+         * Address configuration packet
+         */
+        case Artnet_OpAddress:
+        {
+            artnet_address_t* address = (artnet_address_t*) packet;
+
+            //if the Netswitch high bit is set then change the Net setting
+            if((address->NetSwitch&0x80)!=0)
+            {
+                //set the network and clear the high order bit
+                settingsSetArtnetNet(address->NetSwitch&0x7F);
+            }
+            else if (address->NetSwitch==0x00)
+            {
+                //a value of x00 means set to the physicial config so set to 0x00
+                settingsSetArtnetNet(0x00);
+            }
+            
+            //if the Subswitch high bit is set then change the Net setting
+            if((address->SubSwitch&0x80)!=0)
+            {
+                //set the network and clear the high order bit
+                settingsSetArtnetSubNet(address->SubSwitch&0x0F);
+            }
+            else if (address->SubSwitch==0x00)
+            {
+                //a value of x00 means set to the physicial config so set to 0x00
+                settingsSetArtnetSubNet(0x00);
+            }
+
+            // set the address of output 0
+            if((address->SwOut[0]&0x80)!=0)
+            {
+                //set the network and clear the high order bit
+                settingsSetArtnetUniverse(address->SwOut[0]&0x0F);
+            }
+            else if (address->NetSwitch==0x00)
+            {
+                //a value of x00 means set to the physicial config so set to 0x00
+                settingsSetArtnetUniverse(0x00);
+            }
+
+            //TODO process LED commands
+
+            // nodes should reply with an artPollReply packet
+            create_artpollReply(packet);
+            return ARTNET_ACTION_SEND_REPLY;
+
+            break;
         }
 
         case Artnet_OpTodRequest:
@@ -73,6 +132,12 @@ int process_frame(uint8_t* packet, unsigned int length)
             ESP_LOGI(TAG, "RDM packet");
 
             artnet_rdm_t* artrdm = (artnet_rdm_t *) packet;
+
+            if(artrdm->Net!=settingsGetArtnetNet() 
+                || artrdm->Address!=(settingsGetArtnetSubNet()<<4)+settingsGetArtnetUniverse())
+            {
+                return ARTNET_ACTION_NONE;
+            }
 
             rdm_t* rdm = (rdm_t*) artrdm->RdmPacket;
 
@@ -109,8 +174,8 @@ void create_artpollReply(uint8_t* buffer)
     reply->port = 0x1936;                   // Port 6454
     reply->VersionInfoHi = (SOFTWARE_REVISION>>8)&0xFF;
     reply->VersionInfoLo = (SOFTWARE_REVISION)&0xFF;
-    reply->NetSwitch = 0;
-    reply->SubSwitch = 0;                   //universe 0
+    reply->NetSwitch = settingsGetArtnetNet();
+    reply->SubSwitch = settingsGetArtnetSubNet();
     reply->OemHi = (ARTNET_OEM_CODE>>8)&0xff;
     reply->OemLo = (ARTNET_OEM_CODE)&0xff;  // artnet OEM code
     reply->UbeaVersion = 0;                 // no UBEA is avaliable
@@ -138,11 +203,9 @@ void create_artpollReply(uint8_t* buffer)
     memset(reply->GoodInput,0x00,4);
     memset(reply->GoodOutput,0x00,4);
     reply->GoodOutput[0]=0x80;
-    reply->SwIn[0] = 0x00;
-    reply->SwIn[1] = 0x00;
-    reply->SwIn[2] = 0x00;
-    reply->SwIn[3] = 0x00;
+    memset(reply->SwIn,0x00,4);
     memset(reply->SwOut,0x00,4);
+    reply->SwOut[0]=settingsGetArtnetUniverse();
     reply->SwVideo = 0x00;
     reply->SwMacro = 0x00;
     reply->SwRemote = 0x00;
@@ -185,9 +248,9 @@ void create_artTodData(uint8_t* buffer)
     reply->Port=0x01;
     memset(reply->Spare,0x00,sizeof(reply->Spare));
     reply->BindIndex=0x01;
-    reply->Net=0x00;
+    reply->Net=settingsGetArtnetNet();
     reply->CommandResponse=0x00;
-    reply->Address=0x00;
+    reply->Address=(settingsGetArtnetSubNet()<<4)+settingsGetArtnetUniverse();
     reply->UidTotalHi=0x00;
     reply->UidTotalLo=0x01;
     reply->BlockCount=0x00;
@@ -216,9 +279,9 @@ void create_artrdm(uint8_t* buffer, int rdmlen)
     reply->RdmVer=0x01;
     reply->Filler2=0x00;
     memset(reply->Spare,0x00,7);
-    reply->Net=0x00;
+    reply->Net=settingsGetArtnetNet();
     reply->Command=0x00;
-    reply->Address=0x00;
+    reply->Address=(settingsGetArtnetSubNet()<<4)+settingsGetArtnetUniverse();
     memcpy(reply->RdmPacket,rdmgetBuffer(),rdmlen);
 
     replylen=sizeof(artnet_rdm_t)-32+rdmlen;

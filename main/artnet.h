@@ -83,6 +83,22 @@ typedef struct {
     uint16_t OpCode;
     uint8_t ProtoVerHi;
     uint8_t ProtoVerLow;
+    uint8_t NetSwitch;
+    uint8_t BindIndex;
+    char ShortName[ShortNameLength];
+    char LongName[LongNameLength];
+    uint8_t SwIn[MaxNumPorts];
+    uint8_t SwOut[MaxNumPorts];
+    uint8_t SubSwitch;
+    uint8_t SwVideo;
+    uint8_t Command;
+} artnet_address_t;
+
+typedef struct {
+    uint8_t ID[8];
+    uint16_t OpCode;
+    uint8_t ProtoVerHi;
+    uint8_t ProtoVerLow;
     uint8_t Filler[2];
     uint8_t spare[7];
     uint8_t Net;
@@ -148,6 +164,8 @@ typedef struct {
 #define Artnet_OpPollReply 0x2100 // Poll reply
 
 #define Artnet_OpDmx 0x5000
+
+#define Artnet_OpAddress 0x6000
 
 #define Artnet_OpTodRequest 0x8000
 #define Artnet_OpTodData 0x8100
