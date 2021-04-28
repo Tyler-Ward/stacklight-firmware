@@ -1,0 +1,43 @@
+<html>
+<head>
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<body class="sb-nav-fixed">
+    <div class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+        <a class="navbar-brand" href="index.html">Stack Light</a>
+    </div>
+    <div id="layoutSidenav">
+        <!--<div id="layoutSidenav_nav"></div>-->
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-xl-12 col-md-12 mt-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6>Set Output</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form action="/set" method="post">
+                                        <select id="mode" name="mode">
+                                            <option value="off">Off</option>
+                                            <option value="red">Red</option>
+                                            <option value="yellow">Yellow</option>
+                                            <option value="green">Green</option>
+                                            <option value="all">All</option>
+                                        </select>
+                                        <br/><br/>
+                                        <button type="submit">Submit</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

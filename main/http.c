@@ -3,17 +3,37 @@
 
 #include <esp_http_server.h>
 #include <esp_log.h>
+#include <esp_spiffs.h>
 
 #include "http.h"
 #include "output.h"
+#include "settings.h"
 
 static const char *TAG = "eth_example";
 
-static esp_err_t status_get_handler(httpd_req_t *req)
+static esp_err_t file_get_handler(httpd_req_t *req)
 {
-    char ret[] = "<h1>Light Control</h1><form action=\"/set\" method=\"post\"><select id=\"mode\" name=\"mode\"><option value=\"off\">Off</option><option value=\"red\">Red</option><option value=\"yellow\">Yellow</option><option value=\"green\">Green</option><option value=\"all\">All</option></select><br><button type=\"submit\">Submit</button></form>";
+    FILE* f = fopen(req->user_ctx, "r");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open file");
+        return ESP_ERR_NOT_FOUND;
+    }
 
-    httpd_resp_send(req,ret,strlen(ret));
+    char buf[256];
+
+    size_t read;
+
+    httpd_resp_set_type(req,"text/css");
+
+    do{
+        read = fread((void*) buf, 1, sizeof(buf), f);
+        httpd_resp_send_chunk(req,buf,read);
+    } while(read == sizeof(buf));
+
+    fclose(f);
+
+    httpd_resp_send_chunk(req, NULL, 0);
+
 
     return ESP_OK;
 }
@@ -21,8 +41,15 @@ static esp_err_t status_get_handler(httpd_req_t *req)
 static const httpd_uri_t page_main = {
     .uri = "/",
     .method = HTTP_GET,
-    .handler = status_get_handler,
-    .user_ctx  = NULL
+    .handler = file_get_handler,
+    .user_ctx  = "/spiffs/template_test.html"
+};
+
+static const httpd_uri_t page_css = {
+    .uri = "/css/styles.css",
+    .method = HTTP_GET,
+    .handler = file_get_handler,
+    .user_ctx  = "/spiffs/css/styles.css"
 };
 
 static esp_err_t set_post_handler(httpd_req_t *req)
@@ -55,7 +82,7 @@ static esp_err_t set_post_handler(httpd_req_t *req)
     memset(mode,0,32);
     httpd_query_key_value(buf,"mode",mode,32);
     //remove colons at the end of short strings
-    if(mode[strlen(mode)-1]==':')
+    if(mode[strlen(mode)-1]==':' || mode[strlen(mode)-1]==';')
     {
         mode[strlen(mode)-1]='\0';
     }
@@ -76,7 +103,34 @@ static const httpd_uri_t page_set_mode = {
 void setup_web_server()
 {
     ESP_LOGI(TAG,"WEBSERVER THREAD STARTED");
-    
+
+    esp_vfs_spiffs_conf_t conf = {
+        .base_path = "/spiffs",
+        .partition_label = NULL,
+        .max_files = 5,
+        .format_if_mount_failed = false
+    };
+
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
+
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            ESP_LOGE(TAG, "Failed to mount or format filesystem");
+        } else if (ret == ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to find SPIFFS partition");
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+        }
+        return;
+    }
+
+    size_t total = 0, used = 0;
+    ret = esp_spiffs_info(NULL, &total, &used);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+    } else {
+        ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+    }
 
     static httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -86,6 +140,7 @@ void setup_web_server()
     {
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server,&page_main);
+        httpd_register_uri_handler(server,&page_css);
         httpd_register_uri_handler(server,&page_set_mode);
     }
 }
