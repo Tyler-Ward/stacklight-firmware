@@ -8,9 +8,10 @@
 
 #include "product_ids.h"
 
+#include "indicators.h"
+
 uint8_t rdm_responce_buffer[52];
 bool broadcast=false;
-uint8_t identify_mode;
 
 static const char *TAG = "rdm_proc";
 
@@ -525,22 +526,21 @@ int processRdm(rdm_t* rdmin)
                 return(rdm_generate_nack_reason(rdm,RDM_NR_FORMAT_ERROR));
             }
 
-            //check range of dmx address
+            //check range of identify input
             if(rdm->parameterData[0]>0x01)
             {
                 return(rdm_generate_nack_reason(rdm,RDM_NR_DATA_OUT_OF_RANGE));
             }
 
-            identify_mode=rdm->parameterData[0];
-            if(identify_mode)
+            if(rdm->parameterData[0]==1)
             {
                 ESP_LOGI(TAG, "identify on");
-                //digitalWrite(13, HIGH);
+                indicatorsSetLocate(1);
             }
             else
             {
                 ESP_LOGI(TAG, "identify off");
-                //digitalWrite(13, LOW);
+                indicatorsSetLocate(0);
             }
 
             //confirm write
@@ -581,7 +581,16 @@ int processRdm(rdm_t* rdmin)
             rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
             rdmout->parameterID=flipbyteorder(RDM_IDENTIFY_DEVICE);
             rdmout->parameterDataLength=0x01;
-            rdmout->parameterData[0]=identify_mode;
+            if(indicatorsGetLocate())
+            {
+                //locate enabled
+                rdmout->parameterData[0]=1;
+            }
+            else
+            {
+                //locate disabled
+                rdmout->parameterData[0]=0;
+            }
             return(finalisePacket(rdmout));
         }
     }

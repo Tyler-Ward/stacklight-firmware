@@ -6,6 +6,8 @@
 
 #include "hardware.h"
 
+static bool indicatorLocateSet=0;
+
 
 void indicatorsSetup()
 {
@@ -23,6 +25,8 @@ void indicatorsSetup()
     output_conf.pull_up_en = 0;
     gpio_config(&output_conf);
 
+    indicatorLocateSet=0;
+
     gpio_set_level(GPIO_LED_ENABLE,1);
 }
 
@@ -34,6 +38,12 @@ void indicatorsSetArtnet(bool iluminated)
 void indicatorsSetLocate(bool iluminated)
 {
     gpio_set_level(GPIO_LED_LOCATE,iluminated);
+    indicatorLocateSet=iluminated;
+}
+
+bool indicatorsGetLocate()
+{
+    return indicatorLocateSet;
 }
 
 void indicatorsSetNetwork(bool iluminated)

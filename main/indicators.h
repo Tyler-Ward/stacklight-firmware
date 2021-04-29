@@ -22,6 +22,13 @@ void indicatorsSetArtnet(bool iluminated);
 void indicatorsSetLocate(bool iluminated);
 
 /**
+ * @brief Gets the state of the locate Indicator.
+ * 
+ * @retval 1 if the led should be lot 0 if not
+ */
+bool indicatorsGetLocate();
+
+/**
  * @brief Set the state of the network Indicator.
  * 
  * @param iluminated 1 if the led should be lot 0 if not

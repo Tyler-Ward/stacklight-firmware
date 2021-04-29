@@ -12,6 +12,7 @@
 #include "product_ids.h"
 
 #include "output.h"
+#include "indicators.h"
 
 static const char *TAG = "artnet";
 
@@ -110,7 +111,15 @@ int process_frame(uint8_t* packet, unsigned int length)
                 settingsSetArtnetUniverse(0x00);
             }
 
-            //TODO process LED commands
+            //process locate commands
+            if(address->Command==0x02)
+            {
+                indicatorsSetLocate(0);
+            }
+            if(address->Command==0x04)
+            {
+                indicatorsSetLocate(1);
+            }
 
             // nodes should reply with an artPollReply packet
             create_artpollReply(packet);
@@ -181,7 +190,14 @@ void create_artpollReply(uint8_t* buffer)
     reply->UbeaVersion = 0;                 // no UBEA is avaliable
 
     uint8_t status = 0;
-    status |= 0xC0;     // Indicators in normal Mode
+    if(indicatorsGetLocate())
+    {
+        status |= 0x40; // Indicators in locate Mode
+    }
+    else
+    {
+        status |= 0xC0; // Indicators in normal Mode
+    }
     status |= 0x20;     // Port-Address set by network
     status |= 0x02;     // RDM support
     reply->status = status;
