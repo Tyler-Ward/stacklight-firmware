@@ -16,7 +16,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
     FILE* f = fopen(req->user_ctx, "r");
     if (f == NULL) {
         ESP_LOGE(TAG, "Failed to open file");
-        return ESP_ERR_NOT_FOUND;
+        return ESP_FAIL;
     }
 
     char buf[256];
@@ -34,6 +34,107 @@ static esp_err_t file_get_handler(httpd_req_t *req)
 
     httpd_resp_send_chunk(req, NULL, 0);
 
+    return ESP_OK;
+}
+
+/* Get variable 
+ *
+ * param buffer buffer containing tag, tag is replaced with value.
+ */
+static uint16_t getVariable(char* buffer)
+{
+    if(strcmp(buffer,"ArtnetNet")==0)
+    {
+        return sprintf(buffer,"%d",settingsGetArtnetNet());
+    }
+    if(strcmp(buffer,"ArtnetSubNet")==0)
+    {
+        return sprintf(buffer,"%d",settingsGetArtnetSubNet());
+    }
+    if(strcmp(buffer,"ArtnetUniverse")==0)
+    {
+        return sprintf(buffer,"%d",settingsGetArtnetUniverse());
+    }
+    if(strcmp(buffer,"DMXAddr")==0)
+    {
+        return sprintf(buffer,"%d",settingsGetDmxAddr());
+    }
+
+    buffer[0]='\0';
+    return(0);
+}
+
+static esp_err_t template_get_handler(httpd_req_t *req)
+{
+    FILE* f = fopen(req->user_ctx, "r");
+    if (f == NULL) {
+        ESP_LOGE(TAG, "Failed to open template");
+        return ESP_FAIL;
+    }
+
+    char buf[256];
+    uint16_t index = 0;
+    char ch;
+
+    while(fread((void*)&ch,1,1,f))
+    {
+        if(ch =='%')
+        {
+            //enter tag processing
+            if(index!=0)
+            {
+                //clear buffer
+                httpd_resp_send_chunk(req,buf,index);
+                index=0;
+            }
+
+            //copy tag into buffer
+            while(fread((void*)&ch,1,1,f))
+            {
+                if(ch == '%')
+                {
+                    //end of tag
+                    buf[index]='\0';
+                    index = getVariable(buf);
+                    break;
+                }
+                else
+                {
+                    buf[index] = ch;
+                    index++;
+
+                    //check for overrunning tags
+                    if(index==255) //need one space for the end of string character
+                    {
+                        ESP_LOGE(TAG, "template tag too long");
+                        fclose(f);
+                        return ESP_FAIL;
+                    }
+                }
+            }
+        }
+        else
+        {
+            buf[index] = ch;
+            index++;
+            //send data if buffer is full
+            if(index==256)
+            {
+                httpd_resp_send_chunk(req,buf,index);
+                index=0;
+            }
+        }
+    }
+
+    if(index!=0)
+    {
+        httpd_resp_send_chunk(req,buf,index);
+        index=0;
+    }
+
+    httpd_resp_send_chunk(req, NULL, 0);
+
+    fclose(f);
 
     return ESP_OK;
 }
@@ -41,7 +142,7 @@ static esp_err_t file_get_handler(httpd_req_t *req)
 static const httpd_uri_t page_main = {
     .uri = "/",
     .method = HTTP_GET,
-    .handler = file_get_handler,
+    .handler = template_get_handler,
     .user_ctx  = "/spiffs/template_test.html"
 };
 
@@ -100,6 +201,106 @@ static const httpd_uri_t page_set_mode = {
     .user_ctx = NULL
 };
 
+static esp_err_t artnet_post_handler(httpd_req_t *req)
+{
+    char buf[100];
+    int ret, remaining = req->content_len;
+
+    while (remaining > 0) {
+        /* Read the data for the request */
+        if ((ret = httpd_req_recv(req, buf,
+                        MIN(remaining, sizeof(buf)))) <= 0) {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                /* Retry receiving if timeout occurred */
+                continue;
+            }
+            return ESP_FAIL;
+        }
+
+        /* Send back the same data */
+        httpd_resp_send_chunk(req, buf, ret);
+        remaining -= ret;
+
+        /* Log data received */
+        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
+        ESP_LOGI(TAG, "%.*s", ret, buf);
+        ESP_LOGI(TAG, "====================================");
+    }
+
+    uint16_t newDMXAddr = 0;
+    uint8_t newArtnetNet = 0;
+    uint8_t newArtnetSubNet = 0;
+    uint8_t newArtnetUniverse = 0;
+
+    //get values
+    char value[32];
+    char* end;
+
+    memset(value,0,32);
+    httpd_query_key_value(buf,"DMXAddr",value,32);
+    //remove colons at the end of short strings
+    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    {
+        value[strlen(value)-1]='\0';
+    }
+    newDMXAddr = strtol(value,&end,10);
+
+    memset(value,0,32);
+    httpd_query_key_value(buf,"Net",value,32);
+    //remove colons at the end of short strings
+    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    {
+        value[strlen(value)-1]='\0';
+    }
+    newArtnetNet = strtol(value,&end,10);
+
+    memset(value,0,32);
+    httpd_query_key_value(buf,"Subnet",value,32);
+    //remove colons at the end of short strings
+    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    {
+        value[strlen(value)-1]='\0';
+    }
+    newArtnetSubNet = strtol(value,&end,10);
+
+    memset(value,0,32);
+    httpd_query_key_value(buf,"Universe",value,32);
+    //remove colons at the end of short strings
+    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    {
+        value[strlen(value)-1]='\0';
+    }
+    newArtnetUniverse = strtol(value,&end,10);
+
+    /* Log data received */
+    ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
+    ESP_LOGI(TAG, "%d-%d-%d  %d", newArtnetNet, newArtnetSubNet, newArtnetUniverse, newDMXAddr);
+    ESP_LOGI(TAG, "====================================");
+
+    //check values
+    if(newArtnetNet<=127 && newArtnetNet>=0
+        && newArtnetSubNet<=15 && newArtnetSubNet>=0
+        && newArtnetUniverse<=15 && newArtnetUniverse>=0
+        && newDMXAddr<=418 && newDMXAddr>=1)
+    {
+        settingsSetArtnetNet(newArtnetNet);
+        settingsSetArtnetSubNet(newArtnetSubNet);
+        settingsSetArtnetUniverse(newArtnetUniverse);
+        settingsSetDmxAddr(newDMXAddr);
+    }
+
+    // End response
+    httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+
+static const httpd_uri_t artnet_set_mode = {
+    .uri = "/artnetConfig",
+    .method = HTTP_POST,
+    .handler = artnet_post_handler,
+    .user_ctx = NULL
+};
+
 void setup_web_server()
 {
     ESP_LOGI(TAG,"WEBSERVER THREAD STARTED");
@@ -142,5 +343,6 @@ void setup_web_server()
         httpd_register_uri_handler(server,&page_main);
         httpd_register_uri_handler(server,&page_css);
         httpd_register_uri_handler(server,&page_set_mode);
+        httpd_register_uri_handler(server,&artnet_set_mode);
     }
 }

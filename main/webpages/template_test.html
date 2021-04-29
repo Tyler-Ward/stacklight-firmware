@@ -33,7 +33,21 @@
                             </div>
                         </div>
 
-
+                        <div class="col-xl-12 col-md-12">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6>Artnet/DMX configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form  action="/artnetConfig" method="post">
+                                        Artnet Address: <input name="Net" type="number" min=0 max=127 value="%ArtnetNet%">-<input name="Subnet" type="number" min=0 max=15 value="%ArtnetSubNet%">-<input name="Universe" type="number" min=0 max=15 value="%ArtnetUniverse%"> <br>
+                                        DMX Address <input name= "DMXAddr" type="number" min=1 max=508 value="%DMXAddr%">
+                                        <br/>
+                                        <button type="submit">Set</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
