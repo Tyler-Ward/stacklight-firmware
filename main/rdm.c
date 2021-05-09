@@ -96,7 +96,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
         rdmout->parameterID=flipbyteorder(RDM_SUPPORTED_PARAMETERS);
-        rdmout->parameterDataLength=10;
+        rdmout->parameterDataLength=12;
         //responce
         //model_description
         rdmout->parameterData[0]=(RDM_DEVICE_MODEL_DESCRIPTION>>8)&0xFF;
@@ -110,9 +110,12 @@ int processRdm(rdm_t* rdmin)
         //personality desc
         rdmout->parameterData[6]=(RDM_DMX_PERSONALITY_DESCRIPTION>>8)&0xFF;
         rdmout->parameterData[7]=RDM_DMX_PERSONALITY_DESCRIPTION&0xFF;
-        //slot info`
+        //slot info
         rdmout->parameterData[8]=(RDM_SLOT_INFO>>8)&0xFF;
         rdmout->parameterData[9]=RDM_SLOT_INFO&0xFF;
+        //slot description
+        rdmout->parameterData[10]=(RDM_SLOT_DESCRIPTION>>8)&0xFF;
+        rdmout->parameterData[11]=RDM_SLOT_DESCRIPTION&0xFF;
 
 
         return(finalisePacket(rdmout));
@@ -513,6 +516,75 @@ int processRdm(rdm_t* rdmin)
 
         return(finalisePacket(rdmout));
 
+    }
+
+    if(parameterID == RDM_SLOT_DESCRIPTION)
+    {
+        //this variable cant be set
+        if(rdm->commandClass==RDM_SET_COMMAND)
+        {
+            return(rdm_generate_nack_reason(rdm,RDM_NR_UNSUPPORTED_COMMAND_CLASS));
+        }
+        ESP_LOGI(TAG, "slot desc");
+
+        //raise a format error nack if no data is provided
+        if(rdm->parameterDataLength!=0x02)
+        {
+            return(rdm_generate_nack_reason(rdm,RDM_NR_FORMAT_ERROR));
+        }
+
+        //get praameter value
+        uint16_t slotID = (rdm->parameterData[0]<<8) + (rdm->parameterData[1]);
+
+        //return error if more thatn four slots
+        if(slotID>=0x04)
+        {
+            return(rdm_generate_nack_reason(rdm,RDM_NR_DATA_OUT_OF_RANGE));
+        }
+
+        //Frame
+        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+
+        rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
+        //rdmout->messageLength=24+19;
+        memcpy(rdmout->destination,rdm->source,6);
+        memcpy(rdmout->source,rdm->destination,6);
+        rdmout->transactionNumber=rdm->transactionNumber;
+        rdmout->portID=RDM_RESPONSE_TYPE_ACK;
+        rdmout->messageCount=0x00;
+        rdmout->subDevice=0x00;
+        rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
+        rdmout->parameterID=flipbyteorder(RDM_SLOT_DESCRIPTION);
+        int namelen;
+        switch(slotID)
+        {
+            case 0x0000:
+                rdmout->parameterData[0]=0x00;
+                rdmout->parameterData[1]=0x00;
+                namelen = sprintf((char*) &rdmout->parameterData[2],"Red");
+                rdmout->parameterDataLength=2+namelen;
+                break;
+            case 0x0001:
+                rdmout->parameterData[0]=0x00;
+                rdmout->parameterData[1]=0x01;
+                namelen = sprintf((char*) &rdmout->parameterData[2],"Yellow");
+                rdmout->parameterDataLength=2+namelen;
+                break;
+            case 0x0002:
+                rdmout->parameterData[0]=0x00;
+                rdmout->parameterData[1]=0x02;
+                namelen = sprintf((char*) &rdmout->parameterData[2],"Green");
+                rdmout->parameterDataLength=2+namelen;
+                break;
+            case 0x0003:
+                rdmout->parameterData[0]=0x00;
+                rdmout->parameterData[1]=0x03;
+                namelen = sprintf((char*) &rdmout->parameterData[2],"Buzzer");
+                rdmout->parameterDataLength=2+namelen;
+                break;
+        }
+
+        return(finalisePacket(rdmout));
     }
 
     if(parameterID == RDM_IDENTIFY_DEVICE) //get/set identify mode
