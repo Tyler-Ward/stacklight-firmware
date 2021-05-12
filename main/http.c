@@ -7,6 +7,7 @@
 
 #include "http.h"
 #include "output.h"
+#include "indicators.h"
 #include "settings.h"
 
 static const char *TAG = "eth_example";
@@ -58,6 +59,26 @@ static uint16_t getVariable(char* buffer)
     if(strcmp(buffer,"DMXAddr")==0)
     {
         return sprintf(buffer,"%d",settingsGetDmxAddr());
+    }
+    if(strcmp(buffer,"LocateSelectOff")==0)
+    {
+        if(indicatorsGetLocate())
+        {
+            buffer[0]='\0';
+            return 0;
+        }
+        else
+            return sprintf(buffer," selected");
+    }
+    if(strcmp(buffer,"LocateSelectOn")==0)
+    {
+        if(indicatorsGetLocate())
+            return sprintf(buffer," selected");
+        else
+        {
+            buffer[0]='\0';
+            return 0;
+        }
     }
 
     buffer[0]='\0';
@@ -309,6 +330,65 @@ static const httpd_uri_t artnet_set_mode = {
     .user_ctx = NULL
 };
 
+static esp_err_t locate_post_handler(httpd_req_t *req)
+{
+    char buf[100];
+    int ret=0, remaining = req->content_len;
+
+    if(remaining>100)
+    {
+        httpd_resp_set_status(req,"413 Payload Too Large");
+        httpd_resp_send(req,"Post Payload too large",HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* Read the data for the request */
+    if ((ret = httpd_req_recv(req, buf,MIN(remaining, sizeof(buf)))) <= 0)
+    {
+        return ESP_FAIL;
+    }
+
+    //null terminate string for processing
+    buf[ret]='\0';
+
+    char mode[32];
+    memset(mode,0,32);
+    if(httpd_query_key_value(buf,"locate",mode,32)!=ESP_OK)
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
+    ESP_LOGI(TAG, "%s", mode);
+    ESP_LOGI(TAG, "====================================");
+
+    if(strcmp(mode,"true")==0)
+    {
+        indicatorsSetLocate(1);
+    }
+    else if(strcmp(mode,"false")==0)
+    {
+        indicatorsSetLocate(0);
+    }
+    else
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
+
+    // send success
+    httpd_resp_send(req, "Success", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+static const httpd_uri_t locate_set_mode = {
+    .uri = "/locate",
+    .method = HTTP_POST,
+    .handler = locate_post_handler,
+    .user_ctx = NULL
+};
+
 void setup_web_server()
 {
     ESP_LOGI(TAG,"WEBSERVER THREAD STARTED");
@@ -352,5 +432,6 @@ void setup_web_server()
         httpd_register_uri_handler(server,&page_css);
         httpd_register_uri_handler(server,&page_set_mode);
         httpd_register_uri_handler(server,&artnet_set_mode);
+        httpd_register_uri_handler(server,&locate_set_mode);
     }
 }
