@@ -1,3 +1,3 @@
 
-#define ARTNET_OEM_CODE 0x00ff
+#define ARTNET_OEM_CODE 0x2B72
 #define ESTA_ID 0x7FF0
