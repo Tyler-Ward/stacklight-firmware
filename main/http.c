@@ -158,39 +158,36 @@ static esp_err_t set_post_handler(httpd_req_t *req)
     char buf[100];
     int ret, remaining = req->content_len;
 
-    while (remaining > 0) {
-        /* Read the data for the request */
-        if ((ret = httpd_req_recv(req, buf,
-                        MIN(remaining, sizeof(buf)))) <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                /* Retry receiving if timeout occurred */
-                continue;
-            }
-            return ESP_FAIL;
-        }
-
-        /* Send back the same data */
-        httpd_resp_send_chunk(req, buf, ret);
-        remaining -= ret;
-
-        /* Log data received */
-        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
-        ESP_LOGI(TAG, "%.*s", ret, buf);
-        ESP_LOGI(TAG, "====================================");
-    }
-
-    char mode[32];
-    memset(mode,0,32);
-    httpd_query_key_value(buf,"mode",mode,32);
-    //remove colons at the end of short strings
-    if(mode[strlen(mode)-1]==':' || mode[strlen(mode)-1]==';')
+    if(remaining>100)
     {
-        mode[strlen(mode)-1]='\0';
+        httpd_resp_set_status(req,"413 Payload Too Large");
+        httpd_resp_send(req,"Post Payload too large",HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
     }
+
+    /* Read the data for the request */
+    if ((ret = httpd_req_recv(req, buf,MIN(remaining, sizeof(buf)))) <= 0)
+    {
+        return ESP_FAIL;
+    }
+
+    //null terminate string for processing
+    buf[ret]='\0';
+
+    //get values
+    char mode[32];
+
+    memset(mode,0,32);
+    if(httpd_query_key_value(buf,"mode",mode,32)!=ESP_OK)
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
+
     SetOutputsMode(mode);
 
-    // End response
-    httpd_resp_send_chunk(req, NULL, 0);
+    // send success
+    httpd_resp_send(req, "Success", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -203,29 +200,24 @@ static const httpd_uri_t page_set_mode = {
 
 static esp_err_t artnet_post_handler(httpd_req_t *req)
 {
-    char buf[100];
+    char buf[101];
     int ret, remaining = req->content_len;
 
-    while (remaining > 0) {
-        /* Read the data for the request */
-        if ((ret = httpd_req_recv(req, buf,
-                        MIN(remaining, sizeof(buf)))) <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                /* Retry receiving if timeout occurred */
-                continue;
-            }
-            return ESP_FAIL;
-        }
-
-        /* Send back the same data */
-        httpd_resp_send_chunk(req, buf, ret);
-        remaining -= ret;
-
-        /* Log data received */
-        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
-        ESP_LOGI(TAG, "%.*s", ret, buf);
-        ESP_LOGI(TAG, "====================================");
+    if(remaining>100)
+    {
+        httpd_resp_set_status(req,"413 Payload Too Large");
+        httpd_resp_send(req,"Post Payload too large",HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
     }
+
+    /* Read the data for the request */
+    if ((ret = httpd_req_recv(req, buf,MIN(remaining, sizeof(buf)))) <= 0)
+    {
+        return ESP_FAIL;
+    }
+
+    //null terminate string for processing
+    buf[ret]='\0';
 
     uint16_t newDMXAddr = 0;
     uint8_t newArtnetNet = 0;
@@ -235,42 +227,53 @@ static esp_err_t artnet_post_handler(httpd_req_t *req)
     //get values
     char value[32];
     char* end;
+    uint8_t missingValues = 0;
 
     memset(value,0,32);
-    httpd_query_key_value(buf,"DMXAddr",value,32);
-    //remove colons at the end of short strings
-    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    if(httpd_query_key_value(buf,"DMXAddr",value,32)==ESP_OK)
     {
-        value[strlen(value)-1]='\0';
+        newDMXAddr = strtol(value,&end,10);
     }
-    newDMXAddr = strtol(value,&end,10);
+    else
+    {
+        missingValues+=1;
+    }
 
     memset(value,0,32);
-    httpd_query_key_value(buf,"Net",value,32);
-    //remove colons at the end of short strings
-    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    if(httpd_query_key_value(buf,"Net",value,32)==ESP_OK)
     {
-        value[strlen(value)-1]='\0';
+        newArtnetNet = strtol(value,&end,10);
     }
-    newArtnetNet = strtol(value,&end,10);
+    else
+    {
+        missingValues+=1;
+    }
 
     memset(value,0,32);
-    httpd_query_key_value(buf,"Subnet",value,32);
-    //remove colons at the end of short strings
-    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    if(httpd_query_key_value(buf,"Subnet",value,32)==ESP_OK)
     {
-        value[strlen(value)-1]='\0';
+        newArtnetSubNet = strtol(value,&end,10);
     }
-    newArtnetSubNet = strtol(value,&end,10);
+    else
+    {
+        missingValues+=1;
+    }
 
     memset(value,0,32);
-    httpd_query_key_value(buf,"Universe",value,32);
-    //remove colons at the end of short strings
-    if(value[strlen(value)-1]==':' || value[strlen(value)-1]==';')
+    if(httpd_query_key_value(buf,"Universe",value,32)==ESP_OK)
     {
-        value[strlen(value)-1]='\0';
+        newArtnetUniverse = strtol(value,&end,10);
     }
-    newArtnetUniverse = strtol(value,&end,10);
+    else
+    {
+        missingValues+=1;
+    }
+
+    if(missingValues>0)
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
 
     /* Log data received */
     ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
@@ -288,9 +291,14 @@ static esp_err_t artnet_post_handler(httpd_req_t *req)
         settingsSetArtnetUniverse(newArtnetUniverse);
         settingsSetDmxAddr(newDMXAddr);
     }
+    else
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
 
-    // End response
-    httpd_resp_send_chunk(req, NULL, 0);
+    // send success
+    httpd_resp_send(req, "Success", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
