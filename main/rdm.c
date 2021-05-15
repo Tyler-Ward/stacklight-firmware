@@ -4,6 +4,7 @@
 #include "version.h"
 #include "stdio.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include <string.h>
 
 #include "product_ids.h"
@@ -26,6 +27,27 @@ uint8_t* rdmgetBuffer()
     return rdm_responce_buffer;
 }
 
+/*
+ * get UID for RDM device
+ */
+void getRDMUID(uint8_t* addr)
+{
+    /*
+     * UID is generated using ESP32 mac address to produce a unique UID
+     * 23 bit device id consists of selector bute for £SP32 Mac then the last three bytes of the base MAC address
+     */
+
+    uint8_t baseMac[6];
+    esp_efuse_mac_get_default(baseMac);
+
+    addr[0] = (ESTA_ID>>8)&0xff;
+    addr[1] = (ESTA_ID)&0xff;
+    addr[2] = 0x00;
+    addr[3] = baseMac[3];
+    addr[4] = baseMac[4];
+    addr[5] = baseMac[5];
+}
+
 int processRdm(rdm_t* rdmin)
 {
     //ignore any message outside of start code 0x01
@@ -37,10 +59,11 @@ int processRdm(rdm_t* rdmin)
     rdm_sub_message_t* rdm = (rdm_sub_message_t *) rdmin;
     //todo check Checksum
 
-    //check for broadcast
-    uint8_t addr[]={(ESTA_ID>>8)&0xff,(ESTA_ID)&0xff,0x00,0x00,0x00,0x00};
+    //check packet addressing
+    uint8_t addr[6];
+    getRDMUID(addr);
     uint8_t addr_broadcast[]={0xff,0xff,0xff,0xff,0xff,0xff};
-    uint8_t addr_manufacturer_broadcast[]={(ESTA_ID>>8)&0xff,(ESTA_ID)&0xff,0xff,0xff,0xff,0xff};
+    uint8_t addr_manufacturer_broadcast[]={addr[0],addr[1],0xff,0xff,0xff,0xff};
     broadcast=false;
     if(memcmp(rdm->destination,addr,6))
     {

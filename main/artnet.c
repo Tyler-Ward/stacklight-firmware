@@ -272,12 +272,7 @@ void create_artTodData(uint8_t* buffer)
     reply->BlockCount=0x00;
     reply->UidCount=0x01;
     memset(reply->Tod,0x00,sizeof(reply->Tod));
-    reply->Tod[0][0]=(ESTA_ID>>8)&0xff;
-    reply->Tod[0][1]=(ESTA_ID)&0xff;
-    reply->Tod[0][2]=0x00;
-    reply->Tod[0][3]=0x00;
-    reply->Tod[0][4]=0x00;
-    reply->Tod[0][5]=0x00;
+    getRDMUID(&reply->Tod[0][0]);
 
     replylen=sizeof(artnet_tod_data_t)-6;
 }

@@ -38,6 +38,7 @@ int processRdm(rdm_t* rdm);
 int rdm_generate_nack_reason(rdm_sub_message_t* recieved, uint16_t reason);
 uint8_t finalisePacket(rdm_sub_message_t* packet);
 uint8_t* rdmgetBuffer();
+void getRDMUID(uint8_t* addr);
 
 #define RDM_SC_RDM 0xCC
 #define RDM_SC_SUB_MESSAGE 0x01
