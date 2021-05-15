@@ -19,14 +19,14 @@
                                 </div>
                                 <div class="card-body">
                                     <form action="/set" method="post">
-                                        <select id="mode" name="mode">
+                                        <select class="mb-2" id="mode" name="mode">
                                             <option value="off">Off</option>
                                             <option value="red">Red</option>
                                             <option value="yellow">Yellow</option>
                                             <option value="green">Green</option>
                                             <option value="all">All</option>
                                         </select>
-                                        <br/><br/>
+                                        <br/>
                                         <button type="submit">Submit</button>
                                     </form>
                                 </div>
@@ -40,9 +40,9 @@
                                 </div>
                                 <div class="card-body">
                                     <form  action="/artnetConfig" method="post">
-                                        Artnet Address: <input name="Net" type="number" min=0 max=127 value="%ArtnetNet%">-<input name="Subnet" type="number" min=0 max=15 value="%ArtnetSubNet%">-<input name="Universe" type="number" min=0 max=15 value="%ArtnetUniverse%"> <br>
-                                        DMX Address <input name= "DMXAddr" type="number" min=1 max=508 value="%DMXAddr%">
-                                        <br/>
+                                        <label>Artnet Address:</label> <input name="Net" type="number" min=0 max=127 value="%ArtnetNet%">-<input name="Subnet" type="number" min=0 max=15 value="%ArtnetSubNet%">-<input name="Universe" type="number" min=0 max=15 value="%ArtnetUniverse%"> <br>
+                                        <label>DMX Address:</label> <input name= "DMXAddr" type="number" min=1 max=508 value="%DMXAddr%">
+                                        <p class="mb-2">RDM UID: %RDMUID%</p>
                                         <button type="submit">Set</button>
                                     </form>
                                 </div>
@@ -52,11 +52,11 @@
                         <div class="col-xl-12 col-md-12">
                             <div class="card mb-4">
                                 <div class="card-header">
-                                    <h6>Locate</h6>
+                                    <h6>Locator</h6>
                                 </div>
                                 <div class="card-body">
                                     <form  action="/locate" method="post">
-                                        <select id="locate" name="locate">
+                                        <select class="mb-2" id="locate" name="locate">
                                             <option value="false"%LocateSelectOff%>Off</option>
                                             <option value="true"%LocateSelectOn%>On</option>
                                         </select>

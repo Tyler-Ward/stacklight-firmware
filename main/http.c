@@ -9,6 +9,7 @@
 #include "output.h"
 #include "indicators.h"
 #include "settings.h"
+#include "rdm.h"
 
 static const char *TAG = "eth_example";
 
@@ -59,6 +60,13 @@ static uint16_t getVariable(char* buffer)
     if(strcmp(buffer,"DMXAddr")==0)
     {
         return sprintf(buffer,"%d",settingsGetDmxAddr());
+    }
+    if(strcmp(buffer,"RDMUID")==0)
+    {
+        uint8_t rdmUID[6];
+        getRDMUID(rdmUID);
+        return sprintf(buffer,"%02X%02X:%02X%02X%02X%02X",
+            rdmUID[0],rdmUID[1],rdmUID[2],rdmUID[3],rdmUID[4],rdmUID[5]);
     }
     if(strcmp(buffer,"LocateSelectOff")==0)
     {
