@@ -1,0 +1,60 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<body class="sb-nav-fixed">
+    <div class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+        <a class="navbar-brand" href="index.html">Stack Light</a>
+        <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!">open menu</button>
+    </div>
+    <div id="layoutSidenav">
+        <div id="layoutSidenav_nav">
+            <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                <div class="sb-sidenav-menu">
+                    <div class="nav">
+                        <a class="nav-link" href="index.html">Main</a>
+                        <a class="nav-link" href="about.html">About</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-xl-12 col-md-12 mt-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6>Version Info</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Firmware version number: %version%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-12 col-md-12 mt-4">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6>About</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>The POE stack light is a project by <a href="https://www.scorpia.co.uk">Tyler Ward</a></p>
+                                    <p>This is a open source project sourceode for the compoents can be found at the links below</p>
+                                    <ul>
+                                        <li><a href="https://github.com/Tyler-Ward/stacklight-hardware">Hardware</a></li>
+                                        <li><a href="https://github.com/Tyler-Ward/stacklight-firmware">Firmware</a></li>
+                                        <li><a href="https://github.com/Tyler-Ward/stacklight-documentation">Documentation</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="js/scripts.js"></script>
+</body>
+</html>

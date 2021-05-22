@@ -10,6 +10,7 @@
 #include "indicators.h"
 #include "settings.h"
 #include "rdm.h"
+#include "version.h"
 
 static const char *TAG = "eth_example";
 
@@ -87,6 +88,10 @@ static uint16_t getVariable(char* buffer)
             buffer[0]='\0';
             return 0;
         }
+    }
+    if(strcmp(buffer,"version")==0)
+    {
+        return sprintf(buffer,SOFTWARE_VERSION_STRING);
     }
 
     buffer[0]='\0';
@@ -172,7 +177,21 @@ static const httpd_uri_t page_main = {
     .uri = "/",
     .method = HTTP_GET,
     .handler = template_get_handler,
-    .user_ctx  = "/spiffs/template_test.html"
+    .user_ctx  = "/spiffs/index.html"
+};
+
+static const httpd_uri_t page_index = {
+    .uri = "/index.html",
+    .method = HTTP_GET,
+    .handler = template_get_handler,
+    .user_ctx  = "/spiffs/index.html"
+};
+
+static const httpd_uri_t page_about = {
+    .uri = "/about.html",
+    .method = HTTP_GET,
+    .handler = template_get_handler,
+    .user_ctx  = "/spiffs/about.html"
 };
 
 static const httpd_uri_t page_css = {
@@ -437,6 +456,8 @@ void setup_web_server()
     {
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server,&page_main);
+        httpd_register_uri_handler(server,&page_index);
+        httpd_register_uri_handler(server,&page_about);
         httpd_register_uri_handler(server,&page_css);
         httpd_register_uri_handler(server,&page_set_mode);
         httpd_register_uri_handler(server,&artnet_set_mode);

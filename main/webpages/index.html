@@ -6,9 +6,19 @@
 <body class="sb-nav-fixed">
     <div class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
         <a class="navbar-brand" href="index.html">Stack Light</a>
+        <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!">open menu</button>
     </div>
     <div id="layoutSidenav">
-        <!--<div id="layoutSidenav_nav"></div>-->
+        <div id="layoutSidenav_nav">
+            <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                <div class="sb-sidenav-menu">
+                    <div class="nav">
+                        <a class="nav-link" href="index.html">Main</a>
+                        <a class="nav-link" href="about.html">About</a>
+                    </div>
+                </div>
+            </nav>
+        </div>
         <div id="layoutSidenav_content">
             <main>
                 <div class="container-fluid">
@@ -72,5 +82,6 @@
             </main>
         </div>
     </div>
+    <script src="js/scripts.js"></script>
 </body>
 </html>
