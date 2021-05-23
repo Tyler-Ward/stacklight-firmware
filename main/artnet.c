@@ -148,9 +148,7 @@ int process_frame(uint8_t* packet, unsigned int length)
                 return ARTNET_ACTION_NONE;
             }
 
-            rdm_t* rdm = (rdm_t*) artrdm->RdmPacket;
-
-            int responce_len = processRdm(rdm);
+            int responce_len = rdmProcessPacket(artrdm->RdmPacket);
             if(responce_len>0)
             {
                 create_artrdm(packet,responce_len);
@@ -272,7 +270,7 @@ void create_artTodData(uint8_t* buffer)
     reply->BlockCount=0x00;
     reply->UidCount=0x01;
     memset(reply->Tod,0x00,sizeof(reply->Tod));
-    getRDMUID(&reply->Tod[0][0]);
+    rdmGetRDMUID(&reply->Tod[0][0]);
 
     replylen=sizeof(artnet_tod_data_t)-6;
 }
@@ -293,7 +291,7 @@ void create_artrdm(uint8_t* buffer, int rdmlen)
     reply->Net=settingsGetArtnetNet();
     reply->Command=0x00;
     reply->Address=(settingsGetArtnetSubNet()<<4)+settingsGetArtnetUniverse();
-    memcpy(reply->RdmPacket,rdmgetBuffer(),rdmlen);
+    memcpy(reply->RdmPacket,rdmGetBuffer(),rdmlen);
 
     replylen=sizeof(artnet_rdm_t)-32+rdmlen;
 }

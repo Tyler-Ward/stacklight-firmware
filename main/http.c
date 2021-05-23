@@ -65,7 +65,7 @@ static uint16_t getVariable(char* buffer)
     if(strcmp(buffer,"RDMUID")==0)
     {
         uint8_t rdmUID[6];
-        getRDMUID(rdmUID);
+        rdmGetRDMUID(rdmUID);
         return sprintf(buffer,"%02X%02X:%02X%02X%02X%02X",
             rdmUID[0],rdmUID[1],rdmUID[2],rdmUID[3],rdmUID[4],rdmUID[5]);
     }

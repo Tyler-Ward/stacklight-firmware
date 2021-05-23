@@ -1,5 +1,7 @@
 
 #include "rdm.h"
+#include "rdm_variables.h"
+
 #include "settings.h"
 #include "version.h"
 #include "stdio.h"
@@ -8,21 +10,25 @@
 #include <string.h>
 
 #include "product_ids.h"
-
 #include "indicators.h"
 
-uint8_t rdm_responce_buffer[52];
-bool broadcast=false;
+uint8_t rdm_responce_buffer[52]; //buffer to store generated response packets
+bool broadcast=false; //weither the current packet being processed is a broadcast packet
 
 static const char *TAG = "rdm_proc";
 
+//internal RDM functions
+static inline uint16_t flipByteOrder(uint16_t pid);
+int rdm_generate_nack_reason(rdm_message_t* recieved, uint16_t reason);
+uint8_t finalisePacket(rdm_message_t* packet);
+
 //flips the order of the butes in a 16 bit value
-static inline uint16_t flipbyteorder(uint16_t pid)
+static inline uint16_t flipByteOrder(uint16_t pid)
 {
     return ((pid>>8)&0xFF) + ((pid&0xFF)<<8);
 }
 
-uint8_t* rdmgetBuffer()
+uint8_t* rdmGetBuffer()
 {
     return rdm_responce_buffer;
 }
@@ -30,11 +36,11 @@ uint8_t* rdmgetBuffer()
 /*
  * get UID for RDM device
  */
-void getRDMUID(uint8_t* addr)
+void rdmGetRDMUID(uint8_t* addr)
 {
     /*
      * UID is generated using ESP32 mac address to produce a unique UID
-     * 23 bit device id consists of selector bute for £SP32 Mac then the last three bytes of the base MAC address
+     * 32 bit device id consists of selector byte for ESP32 Mac then the last three bytes of the base MAC address
      */
 
     uint8_t baseMac[6];
@@ -48,20 +54,23 @@ void getRDMUID(uint8_t* addr)
     addr[5] = baseMac[5];
 }
 
-int processRdm(rdm_t* rdmin)
+int rdmProcessPacket(uint8_t* buffer)
 {
-    //ignore any message outside of start code 0x01
-    if(rdmin->subStartCode!=RDM_SC_SUB_MESSAGE)
+    //convert message into RDM data type
+    rdm_message_t* rdm = (rdm_message_t *) buffer;
+
+    //ignore any message outside of sub start code 0x01
+    if(rdm->subStartCode!=RDM_SC_SUB_MESSAGE)
     {
-        ESP_LOGW(TAG, "WRONG START CODE");
+        ESP_LOGW(TAG, "WRONG SUB START CODE");
         return(0);
     }
-    rdm_sub_message_t* rdm = (rdm_sub_message_t *) rdmin;
+
     //todo check Checksum
 
     //check packet addressing
     uint8_t addr[6];
-    getRDMUID(addr);
+    rdmGetRDMUID(addr);
     uint8_t addr_broadcast[]={0xff,0xff,0xff,0xff,0xff,0xff};
     uint8_t addr_manufacturer_broadcast[]={addr[0],addr[1],0xff,0xff,0xff,0xff};
     broadcast=false;
@@ -86,7 +95,7 @@ int processRdm(rdm_t* rdmin)
         return(rdm_generate_nack_reason(rdm, RDM_NR_SUB_DEVICE_OUT_OF_RANGE));
     }
 
-    uint16_t parameterID = flipbyteorder(rdm->parameterID);
+    uint16_t parameterID = flipByteOrder(rdm->parameterID);
 
     ESP_LOGI(TAG, "pid : %04x",parameterID);
 
@@ -107,7 +116,7 @@ int processRdm(rdm_t* rdmin)
         }
 
         //Frame
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->messageLength=24+6;
@@ -118,7 +127,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_SUPPORTED_PARAMETERS);
+        rdmout->parameterID=flipByteOrder(RDM_SUPPORTED_PARAMETERS);
         rdmout->parameterDataLength=12;
         //responce
         //model_description
@@ -161,7 +170,7 @@ int processRdm(rdm_t* rdmin)
         }
 
         //Frame
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->MessageLength=24+19;
@@ -172,7 +181,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_DEVICE_INFO);
+        rdmout->parameterID=flipByteOrder(RDM_DEVICE_INFO);
         rdmout->parameterDataLength=0x13;
 
         //responce
@@ -225,7 +234,7 @@ int processRdm(rdm_t* rdmin)
             return(rdm_generate_nack_reason(rdm,RDM_NR_FORMAT_ERROR));
         }
 
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->messageLength=24;
@@ -236,7 +245,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_DEVICE_MODEL_DESCRIPTION);
+        rdmout->parameterID=flipByteOrder(RDM_DEVICE_MODEL_DESCRIPTION);
         int namelen = sprintf((char*)rdmout->parameterData,"PoE Stack Light");
         rdmout->parameterDataLength=namelen;
         return(finalisePacket(rdmout));
@@ -259,7 +268,7 @@ int processRdm(rdm_t* rdmin)
         }
 
         //Frame
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->messageLength=24;
@@ -270,7 +279,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_MANUFACTURER_LABEL);
+        rdmout->parameterID=flipByteOrder(RDM_MANUFACTURER_LABEL);
         int namelen = sprintf((char*)rdmout->parameterData,"Tyler Ward");
         rdmout->parameterDataLength=namelen;
         return(finalisePacket(rdmout));
@@ -293,7 +302,7 @@ int processRdm(rdm_t* rdmin)
         }
 
         //Frame
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->messageLength=24;
@@ -304,7 +313,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_SOFTWARE_VERSION_LABEL);
+        rdmout->parameterID=flipByteOrder(RDM_SOFTWARE_VERSION_LABEL);
         int namelen = sprintf((char*)rdmout->parameterData, SOFTWARE_VERSION_STRING);
         rdmout->parameterDataLength=namelen;
         return(finalisePacket(rdmout));
@@ -329,7 +338,7 @@ int processRdm(rdm_t* rdmin)
             }
 
             //confirm write
-            rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+            rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
             rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
             //rdmout->MessageLength=24;
@@ -340,7 +349,7 @@ int processRdm(rdm_t* rdmin)
             rdmout->messageCount=0x00;
             rdmout->subDevice=0x00;
             rdmout->commandClass=RDM_SET_COMMAND_RESPONSE;
-            rdmout->parameterID=flipbyteorder(RDM_DMX_PERSONALITY);
+            rdmout->parameterID=flipByteOrder(RDM_DMX_PERSONALITY);
             rdmout->parameterDataLength=0;
             return(finalisePacket(rdmout));
         }
@@ -353,7 +362,7 @@ int processRdm(rdm_t* rdmin)
             }
 
             //reply with address
-            rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+            rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
             rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
             //rdmout->messageLength=26;
@@ -364,7 +373,7 @@ int processRdm(rdm_t* rdmin)
             rdmout->messageCount=0x00;
             rdmout->subDevice=0x00;
             rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-            rdmout->parameterID=flipbyteorder(RDM_DMX_PERSONALITY);
+            rdmout->parameterID=flipByteOrder(RDM_DMX_PERSONALITY);
             rdmout->parameterDataLength=0x02;
             rdmout->parameterData[0]=0x01;
             rdmout->parameterData[1]=0x01;
@@ -394,7 +403,7 @@ int processRdm(rdm_t* rdmin)
         }
 
         //Frame
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->messageLength=24+19;
@@ -405,7 +414,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_DMX_PERSONALITY_DESCRIPTION);
+        rdmout->parameterID=flipByteOrder(RDM_DMX_PERSONALITY_DESCRIPTION);
         rdmout->parameterData[0]=0x01;
         rdmout->parameterData[1]=0x00;
         rdmout->parameterData[2]=0x04;
@@ -439,7 +448,7 @@ int processRdm(rdm_t* rdmin)
             settingsSetDmxAddr(recievedDmxAddr);
 
             //confirm write
-            rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+            rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
             rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
             //rdmout->MessageLength=24;
@@ -450,7 +459,7 @@ int processRdm(rdm_t* rdmin)
             rdmout->messageCount=0x00;
             rdmout->subDevice=0x00;
             rdmout->commandClass=RDM_SET_COMMAND_RESPONSE;
-            rdmout->parameterID=flipbyteorder(RDM_DMX_START_ADDRESS);
+            rdmout->parameterID=flipByteOrder(RDM_DMX_START_ADDRESS);
             rdmout->parameterDataLength=0;
             return(finalisePacket(rdmout));
         }
@@ -463,7 +472,7 @@ int processRdm(rdm_t* rdmin)
             }
 
             //reply with address
-            rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+            rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
             rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
             //rdmout->messageLength=26;
@@ -474,7 +483,7 @@ int processRdm(rdm_t* rdmin)
             rdmout->messageCount=0x00;
             rdmout->subDevice=0x00;
             rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-            rdmout->parameterID=flipbyteorder(RDM_DMX_START_ADDRESS);
+            rdmout->parameterID=flipByteOrder(RDM_DMX_START_ADDRESS);
             rdmout->parameterDataLength=0x02;
             uint16_t dmxAddr=settingsGetDmxAddr();
             rdmout->parameterData[0]=(dmxAddr>>8)&0xFF;
@@ -499,7 +508,7 @@ int processRdm(rdm_t* rdmin)
         }
 
         //Frame
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->messageLength=24+19;
@@ -510,7 +519,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_SLOT_INFO);
+        rdmout->parameterID=flipByteOrder(RDM_SLOT_INFO);
         rdmout->parameterDataLength=20;
         //slot 1
         rdmout->parameterData[0]=0x00;
@@ -566,7 +575,7 @@ int processRdm(rdm_t* rdmin)
         }
 
         //Frame
-        rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+        rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
         rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
         //rdmout->messageLength=24+19;
@@ -577,7 +586,7 @@ int processRdm(rdm_t* rdmin)
         rdmout->messageCount=0x00;
         rdmout->subDevice=0x00;
         rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-        rdmout->parameterID=flipbyteorder(RDM_SLOT_DESCRIPTION);
+        rdmout->parameterID=flipByteOrder(RDM_SLOT_DESCRIPTION);
         int namelen;
         switch(slotID)
         {
@@ -639,7 +648,7 @@ int processRdm(rdm_t* rdmin)
             }
 
             //confirm write
-            rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+            rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
             rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
             //rdmout->MessageLength=24;
@@ -650,7 +659,7 @@ int processRdm(rdm_t* rdmin)
             rdmout->messageCount=0x00;
             rdmout->subDevice=0x00;
             rdmout->commandClass=RDM_SET_COMMAND_RESPONSE;
-            rdmout->parameterID=flipbyteorder(RDM_IDENTIFY_DEVICE);
+            rdmout->parameterID=flipByteOrder(RDM_IDENTIFY_DEVICE);
             rdmout->parameterDataLength=0;
             return(finalisePacket(rdmout));
         }
@@ -663,7 +672,7 @@ int processRdm(rdm_t* rdmin)
             }
 
             //reply with identify state
-            rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+            rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
             rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
             //rdmout->messageLength=26;
@@ -674,7 +683,7 @@ int processRdm(rdm_t* rdmin)
             rdmout->messageCount=0x00;
             rdmout->subDevice=0x00;
             rdmout->commandClass=RDM_GET_COMMAND_RESPONSE;
-            rdmout->parameterID=flipbyteorder(RDM_IDENTIFY_DEVICE);
+            rdmout->parameterID=flipByteOrder(RDM_IDENTIFY_DEVICE);
             rdmout->parameterDataLength=0x01;
             if(indicatorsGetLocate())
             {
@@ -697,9 +706,9 @@ int processRdm(rdm_t* rdmin)
     return(rdm_generate_nack_reason(rdm, RDM_NR_UNKNOWN_PID));
 }
 
-int rdm_generate_nack_reason(rdm_sub_message_t* recieved, uint16_t reason)
+int rdm_generate_nack_reason(rdm_message_t* recieved, uint16_t reason)
 {
-    rdm_sub_message_t* rdmout = (rdm_sub_message_t *) rdm_responce_buffer;
+    rdm_message_t* rdmout = (rdm_message_t *) rdm_responce_buffer;
 
     rdmout->subStartCode=RDM_SC_SUB_MESSAGE;
     //rdmout->messageLength=26;
@@ -725,7 +734,7 @@ int rdm_generate_nack_reason(rdm_sub_message_t* recieved, uint16_t reason)
 
 }
 
-uint8_t finalisePacket(rdm_sub_message_t* packet)
+uint8_t finalisePacket(rdm_message_t* packet)
 {
     if(broadcast)
         return(0);
