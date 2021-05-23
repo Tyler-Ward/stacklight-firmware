@@ -40,7 +40,7 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
                  macAddr[0], macAddr[1], macAddr[2], macAddr[3], macAddr[4], macAddr[5]);
         //load the issued MAC address into the artnet module (used in artnet poll replies)
-        setMacAddress(macAddr);
+        artnetSetMacAddress(macAddr);
         indicatorsSetNetwork(1);
         break;
     case ETHERNET_EVENT_DISCONNECTED:
@@ -73,7 +73,7 @@ static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
     ESP_LOGI(TAG, "~~~~~~~~~~~");
 
     //load the issued IP address into the artnet module (used in artnet poll replies)
-    setIpAddress((uint8_t*)&ip_info->ip.addr);
+    artnetSetIpAddress((uint8_t*)&ip_info->ip.addr);
 }
 
 static void artnet_server_task(void *pvParameters)
@@ -130,7 +130,7 @@ static void artnet_server_task(void *pvParameters)
                 //ESP_LOGI(TAG, "Received %d bytes from %s:", len, addr_str);
                 //ESP_LOGI(TAG, "%s", rx_buffer);
 
-                int status = process_frame((uint8_t*)rx_buffer,len);
+                int status = artnetProcessPacket((uint8_t*)rx_buffer,len);
                 switch(status)
                 {
                     case ARTNET_ACTION_NONE:

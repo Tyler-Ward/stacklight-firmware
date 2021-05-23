@@ -1,5 +1,6 @@
 
 #include "artnet.h"
+#include "artnet_variables.h"
 
 #include "string.h"
 #include "stdio.h"
@@ -22,12 +23,17 @@ int replylen = 0;
 uint8_t ipv4_address[4] = {0,0,0,0};
 uint8_t mac_address[6] = {0,0,0,0,0,0};
 
+//internal artnet functions
+void artnetCreateArtpollReply(uint8_t* buffer);
+void artnetCreateArtTodData(uint8_t* buffer);
+void artnetCreateArtrdm(uint8_t* buffer, int rdmlen);
+
 int artnetReplyLen()
 {
     return replylen;
 }
 
-int process_frame(uint8_t* packet, unsigned int length)
+int artnetProcessPacket(uint8_t* packet, unsigned int length)
 {
     artnet_header_t* packetHeader = (artnet_header_t*)packet;
 
@@ -61,8 +67,7 @@ int process_frame(uint8_t* packet, unsigned int length)
 
         case Artnet_OpPoll:
         {
-          //Serial.println("ArtPoll");
-          create_artpollReply(packet);
+          artnetCreateArtpollReply(packet);
           return ARTNET_ACTION_SEND_REPLY;
 
           break;
@@ -122,7 +127,7 @@ int process_frame(uint8_t* packet, unsigned int length)
             }
 
             // nodes should reply with an artPollReply packet
-            create_artpollReply(packet);
+            artnetCreateArtpollReply(packet);
             return ARTNET_ACTION_SEND_REPLY;
 
             break;
@@ -132,7 +137,7 @@ int process_frame(uint8_t* packet, unsigned int length)
         case Artnet_OpTodControl:
         {
             ESP_LOGI(TAG, "RDM Discover");
-            create_artTodData(packet);
+            artnetCreateArtTodData(packet);
             return ARTNET_ACTION_SEND_REPLY;
         }
 
@@ -151,7 +156,7 @@ int process_frame(uint8_t* packet, unsigned int length)
             int responce_len = rdmProcessPacket(artrdm->RdmPacket);
             if(responce_len>0)
             {
-                create_artrdm(packet,responce_len);
+                artnetCreateArtrdm(packet,responce_len);
                 return ARTNET_ACTION_SEND_REPLY;
             }
 
@@ -167,7 +172,7 @@ int process_frame(uint8_t* packet, unsigned int length)
 
 
 //build an artnet reply packet
-void create_artpollReply(uint8_t* buffer)
+void artnetCreateArtpollReply(uint8_t* buffer)
 {
     //convert buffer into a reply structure
     artnet_poll_reply_t* reply = (artnet_poll_reply_t*)buffer;
@@ -249,7 +254,7 @@ void create_artpollReply(uint8_t* buffer)
 }
 
 //build an artnet reply packet
-void create_artTodData(uint8_t* buffer)
+void artnetCreateArtTodData(uint8_t* buffer)
 {
     //convert buffer into a reply structure
     artnet_tod_data_t* reply = (artnet_tod_data_t*)buffer;
@@ -276,7 +281,7 @@ void create_artTodData(uint8_t* buffer)
 }
 
 
-void create_artrdm(uint8_t* buffer, int rdmlen)
+void artnetCreateArtrdm(uint8_t* buffer, int rdmlen)
 {
     //convert buffer into a reply structure
     artnet_rdm_t* reply = (artnet_rdm_t*)buffer;
@@ -296,12 +301,12 @@ void create_artrdm(uint8_t* buffer, int rdmlen)
     replylen=sizeof(artnet_rdm_t)-32+rdmlen;
 }
 
-void setIpAddress(uint8_t* address)
+void artnetSetIpAddress(uint8_t* address)
 {
     memcpy(ipv4_address,address,4);
 }
 
-void setMacAddress(uint8_t* address)
+void artnetSetMacAddress(uint8_t* address)
 {
     memcpy(mac_address,address,6);
 }
