@@ -3,11 +3,17 @@
 
 #include <driver/gpio.h>
 #include <esp_log.h>
+#include <esp_timer.h>
 
 #include "hardware.h"
 
 static bool indicatorLocateSet=0;
 
+static bool inidcatorArtnetTimed=0;
+esp_timer_handle_t artnetIndicatorTimer;
+static int64_t artnetIndicatorTimeout;
+
+static void indicatorsArtnetLEDTimeout(void* arg);
 
 void indicatorsSetup()
 {
@@ -28,6 +34,34 @@ void indicatorsSetup()
     indicatorLocateSet=0;
 
     gpio_set_level(GPIO_LED_ENABLE,1);
+
+    const esp_timer_create_args_t artnetIndicatorTimerArgs = {
+        .callback = &indicatorsArtnetLEDTimeout,
+        /* name is optional, but may help identify the timer when debugging */
+        .name = "artnetLED"
+    };
+    ESP_ERROR_CHECK(esp_timer_create(&artnetIndicatorTimerArgs, &artnetIndicatorTimer));
+    esp_timer_start_periodic(artnetIndicatorTimer, 500000);
+}
+
+static void indicatorsArtnetLEDTimeout(void* arg)
+{
+    if (inidcatorArtnetTimed)
+    {
+        int64_t time_since_boot = esp_timer_get_time();
+        if(time_since_boot>artnetIndicatorTimeout)
+        {
+            indicatorsSetArtnet(0);
+            inidcatorArtnetTimed=0;
+        }
+    }
+}
+
+void indicatorsSetArtnetTimed(uint32_t timeus)
+{
+    inidcatorArtnetTimed=1;
+    artnetIndicatorTimeout=esp_timer_get_time()+timeus;
+    gpio_set_level(GPIO_LED_ARTNET,1);
 }
 
 void indicatorsSetArtnet(bool iluminated)

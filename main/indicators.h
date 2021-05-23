@@ -1,11 +1,19 @@
 // functions to control status indicators
 
 #include <stdbool.h>
+#include <stdint.h>
 
 /**
  * @brief Initialize the indicators.
  */
 void indicatorsSetup();
+
+/**
+ * @brief Sets the Artnet Indicator for a given interval.
+ * 
+ * @param timeus time in microseconds to illumninate for
+ */
+void indicatorsSetArtnetTimed(uint32_t timeus);
 
 /**
  * @brief Set the state of the Artnet Indicator.

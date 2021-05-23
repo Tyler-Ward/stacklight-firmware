@@ -61,6 +61,8 @@ int artnetProcessPacket(uint8_t* packet, unsigned int length)
             uint16_t dmxIndex = settingsGetDmxAddr() - 1;
             SetOutputsDMX(dmxIndex, dmx->Data);
 
+            indicatorsSetArtnetTimed(6000000); //artnet indicator on for 6s
+
             return ARTNET_ACTION_NONE;
             break;
         }
