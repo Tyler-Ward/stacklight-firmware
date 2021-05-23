@@ -199,6 +199,6 @@ void app_main()
     ESP_ERROR_CHECK(esp_eth_start(eth_handle));
 
     xTaskCreate(artnet_server_task, "artnet", 4096, NULL, 5, NULL);
-    setup_web_server();
+    httpSetup();
 
 }

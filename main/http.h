@@ -1,3 +1,6 @@
 
 
-void setup_web_server();
+/**
+ * @brief Configures and starts the web server
+ */
+void httpSetup();

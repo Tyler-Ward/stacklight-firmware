@@ -24,7 +24,7 @@ void indicatorsSetLocate(bool iluminated);
 /**
  * @brief Gets the state of the locate Indicator.
  * 
- * @retval 1 if the led should be lot 0 if not
+ * @retval 1 if the led is lit 0 if not
  */
 bool indicatorsGetLocate();
 

@@ -423,7 +423,7 @@ static const httpd_uri_t locate_set_mode = {
     .user_ctx = NULL
 };
 
-void setup_web_server()
+void httpSetup()
 {
     ESP_LOGI(TAG,"WEBSERVER THREAD STARTED");
 
