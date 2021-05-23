@@ -201,6 +201,13 @@ static const httpd_uri_t page_css = {
     .user_ctx  = "/spiffs/css/styles.css"
 };
 
+static const httpd_uri_t page_js = {
+    .uri = "/js/scripts.js",
+    .method = HTTP_GET,
+    .handler = file_get_handler,
+    .user_ctx  = "/spiffs/js/scripts.js"
+};
+
 static esp_err_t set_post_handler(httpd_req_t *req)
 {
     char buf[100];
@@ -459,6 +466,7 @@ void setup_web_server()
         httpd_register_uri_handler(server,&page_index);
         httpd_register_uri_handler(server,&page_about);
         httpd_register_uri_handler(server,&page_css);
+        httpd_register_uri_handler(server,&page_js);
         httpd_register_uri_handler(server,&page_set_mode);
         httpd_register_uri_handler(server,&artnet_set_mode);
         httpd_register_uri_handler(server,&locate_set_mode);
