@@ -32,11 +32,18 @@
                                     <form action="/set" method="post">
                                         <select class="mb-2" id="mode" name="mode">
                                             <option value="off">Off</option>
-                                            <option value="red">Red</option>
-                                            <option value="yellow">Yellow</option>
-                                            <option value="green">Green</option>
-                                            <option value="all">All</option>
-                                            <option value="buzzer">Buzzer</option>
+                                            <option value="buzzer">Buzzer Only</option>
+                                            <option value="all">All Lights</option>
+                                            <optgroup label="No Buzzer">
+                                                <option value="red">Red</option>
+                                                <option value="yellow">Yellow</option>
+                                                <option value="green">Green</option>
+                                            </optgroup>
+                                            <optgroup label="Buzzer">
+                                                <option value="red_buzzer">Red + Buzzer</option>
+                                                <option value="yellow_buzzer">Yellow + Buzzer</option>
+                                                <option value="green_buzzer">Green + Buzzer</option>
+                                            </optgroup>
                                         </select>
                                         <br/>
                                         <button type="submit">Submit</button>
