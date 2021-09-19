@@ -12,7 +12,7 @@
 #include "rdm.h"
 #include "version.h"
 
-static const char *TAG = "eth_example";
+static const char *TAG = "stacklight_http";
 
 static esp_err_t file_get_handler(httpd_req_t *req)
 {
