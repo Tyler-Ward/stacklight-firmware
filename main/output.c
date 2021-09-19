@@ -59,14 +59,16 @@ typedef struct
     int red;
     int yellow;
     int green;
+    int buzzer;
 } out_mode_t;
 
 static out_mode_t modes[] = {
-    {"off",0,0,0},
-    {"red",255*32,0,0},
-    {"yellow",0,255*32,0},
-    {"green",0,0,255*32},
-    {"all",255*32,255*32,255*32},
+    {"off", 0, 0, 0, 0},
+    {"red", 255*32, 0, 0, 0},
+    {"yellow",0, 255*32, 0, 0},
+    {"green", 0, 0, 255*32, 0},
+    {"all", 255*32, 255*32, 255*32, 0},
+    {"buzzer", 0, 0, 0, 255*32},
     {0x00,0,0,0}
 };
 
@@ -80,7 +82,7 @@ void SetOutputsMode(char* mode)
             ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,modes[i].red,0);
             ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,modes[i].yellow,0);
             ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,modes[i].green,0);
-            ledc_set_duty_and_update(ledc_channel[3].speed_mode,ledc_channel[3].channel,0,0);
+            ledc_set_duty_and_update(ledc_channel[3].speed_mode,ledc_channel[3].channel,modes[i].buzzer,0);
             return;
         }
         i++;
