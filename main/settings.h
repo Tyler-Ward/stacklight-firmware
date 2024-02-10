@@ -57,3 +57,16 @@ uint8_t settingsGetArtnetUniverse();
  * @param newArtnetUniverse Artnet universe
  */
 void settingsSetArtnetUniverse(uint8_t newArtnetUniverse);
+
+/**
+ * @brief Get the Brightness
+ * 
+ * @retval brightness value 0-255
+ */
+uint8_t settingsGetBrightness();
+/**
+ * @brief Set the Brightness
+ * 
+ * @param newBrightness brightness value 0-255
+ */
+void settingsSetBrightness(uint8_t newBrightness);

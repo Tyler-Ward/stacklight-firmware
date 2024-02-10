@@ -55,6 +55,21 @@
                         <div class="col-xl-12 col-md-12">
                             <div class="card mb-4">
                                 <div class="card-header">
+                                    <h6>HTTP control settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form action="/settings" method="post">
+                                        <label>Brightness:</label> <input type="range" min="1" max="255" value="%Brightness%" class="slider" id="brightness" name="brightness">
+                                        <br/>
+                                        <button type="submit">Submit</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-12 col-md-12">
+                            <div class="card mb-4">
+                                <div class="card-header">
                                     <h6>Artnet/DMX configuration</h6>
                                 </div>
                                 <div class="card-body">

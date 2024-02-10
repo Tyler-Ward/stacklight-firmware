@@ -7,6 +7,7 @@
 #include "esp_log.h"
 
 #include "hardware.h"
+#include "settings.h"
 
 static const char *TAG = "output";
 
@@ -72,19 +73,21 @@ static out_mode_t modes[] = {
     {"red_buzzer", 255*32, 0, 0, 255*32},
     {"yellow_buzzer",0, 255*32, 0, 255*32},
     {"green_buzzer", 0, 0, 255*32, 255*32},
-    {0x00,0,0,0}
+    {0x00,0,0,0,0}
 };
 
 void SetOutputsMode(char* mode)
 {
+    int brightness = settingsGetBrightness();
+
     int i = 0;
     while(modes[i].modeName)
     {
         if(strcmp(modes[i].modeName,mode)==0)
         {
-            ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,modes[i].red,0);
-            ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,modes[i].yellow,0);
-            ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,modes[i].green,0);
+            ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,(modes[i].red/255)*brightness,0);
+            ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,(modes[i].yellow/255)*brightness,0);
+            ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,(modes[i].green/255)*brightness,0);
             ledc_set_duty_and_update(ledc_channel[3].speed_mode,ledc_channel[3].channel,modes[i].buzzer,0);
             return;
         }

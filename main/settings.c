@@ -13,6 +13,7 @@ static uint16_t dmxAddr = 1;
 static uint8_t artnetNet = 0;
 static uint8_t artnetSubNet = 0;
 static uint8_t artnetUniverse = 0;
+static uint8_t brightness = 255;
 
 void settingsSetup()
 {
@@ -32,6 +33,7 @@ void settingsSetup()
     nvs_get_u8(nvsHandle,"artnetNet",&artnetNet);
     nvs_get_u8(nvsHandle,"artnetSubNet",&artnetSubNet);
     nvs_get_u8(nvsHandle,"artnetUniverse",&artnetUniverse);
+    nvs_get_u8(nvsHandle,"brightness",&brightness);
 }
 
 uint16_t settingsGetDmxAddr()
@@ -79,5 +81,17 @@ void settingsSetArtnetUniverse(uint8_t newArtnetUniverse)
 {
     artnetUniverse=newArtnetUniverse;
     nvs_set_u8(nvsHandle,"artnetUniverse",artnetUniverse);
+    nvs_commit(nvsHandle);
+}
+
+uint8_t settingsGetBrightness()
+{
+    return brightness;
+}
+
+void settingsSetBrightness(uint8_t newBrightness)
+{
+    brightness=newBrightness;
+    nvs_set_u8(nvsHandle,"brightness",brightness);
     nvs_commit(nvsHandle);
 }
