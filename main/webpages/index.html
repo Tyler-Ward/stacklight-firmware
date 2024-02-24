@@ -29,7 +29,7 @@
                                     <h6>Set Output</h6>
                                 </div>
                                 <div class="card-body">
-                                    <form action="/set" method="post">
+                                    <form action="" method="post" onsubmit="setOutput(this); return false">
                                         <select class="mb-2" id="mode" name="mode">
                                             <option value="off">Off</option>
                                             <option value="buzzer">Buzzer Only</option>
@@ -58,7 +58,7 @@
                                     <h6>HTTP control settings</h6>
                                 </div>
                                 <div class="card-body">
-                                    <form action="/settings" method="post">
+                                    <form action="" method="post" onsubmit="setHTTPSettings(this); return false">
                                         <label>Brightness:</label> <input type="range" min="1" max="255" value="%Brightness%" class="slider" id="brightness" name="brightness">
                                         <br/>
                                         <button type="submit">Submit</button>
@@ -73,7 +73,7 @@
                                     <h6>Artnet/DMX configuration</h6>
                                 </div>
                                 <div class="card-body">
-                                    <form  action="/artnetConfig" method="post">
+                                    <form  action="" method="post" onsubmit="setArtnetSettings(this); return false">
                                         <label>Artnet Address:</label> <input name="Net" type="number" min=0 max=127 value="%ArtnetNet%">-<input name="Subnet" type="number" min=0 max=15 value="%ArtnetSubNet%">-<input name="Universe" type="number" min=0 max=15 value="%ArtnetUniverse%"> <br>
                                         <label>DMX Address:</label> <input name= "DMXAddr" type="number" min=1 max=508 value="%DMXAddr%">
                                         <p class="mb-2">RDM UID: %RDMUID%</p>
@@ -89,7 +89,7 @@
                                     <h6>Locator</h6>
                                 </div>
                                 <div class="card-body">
-                                    <form  action="/locate" method="post">
+                                    <form  action="" method="post" onsubmit="setLocator(this); return false">
                                         <select class="mb-2" id="locate" name="locate">
                                             <option value="false"%LocateSelectOff%>Off</option>
                                             <option value="true"%LocateSelectOn%>On</option>
