@@ -250,7 +250,7 @@ static esp_err_t set_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t page_set_mode = {
+static const httpd_uri_t api_set_mode = {
     .uri = "/set",
     .method = HTTP_POST,
     .handler = set_post_handler,
@@ -322,7 +322,7 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t settings_set_mode = {
+static const httpd_uri_t api_set_settings = {
     .uri = "/settings",
     .method = HTTP_POST,
     .handler = settings_post_handler,
@@ -433,7 +433,7 @@ static esp_err_t artnet_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t artnet_set_mode = {
+static const httpd_uri_t api_set_artnet = {
     .uri = "/artnetConfig",
     .method = HTTP_POST,
     .handler = artnet_post_handler,
@@ -492,7 +492,7 @@ static esp_err_t locate_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t locate_set_mode = {
+static const httpd_uri_t api_set_locate = {
     .uri = "/locate",
     .method = HTTP_POST,
     .handler = locate_post_handler,
@@ -544,9 +544,9 @@ void httpSetup()
         httpd_register_uri_handler(server,&page_about);
         httpd_register_uri_handler(server,&page_css);
         httpd_register_uri_handler(server,&page_js);
-        httpd_register_uri_handler(server,&page_set_mode);
-        httpd_register_uri_handler(server,&settings_set_mode);
-        httpd_register_uri_handler(server,&artnet_set_mode);
-        httpd_register_uri_handler(server,&locate_set_mode);
+        httpd_register_uri_handler(server,&api_set_mode);
+        httpd_register_uri_handler(server,&api_set_settings);
+        httpd_register_uri_handler(server,&api_set_artnet);
+        httpd_register_uri_handler(server,&api_set_locate);
     }
 }
