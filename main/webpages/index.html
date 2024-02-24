@@ -55,11 +55,27 @@
                         <div class="col-xl-12 col-md-12">
                             <div class="card mb-4">
                                 <div class="card-header">
-                                    <h6>HTTP control settings</h6>
+                                    <h6>Output settings</h6>
                                 </div>
                                 <div class="card-body">
-                                    <form action="" method="post" onsubmit="setHTTPSettings(this); return false">
-                                        <label>Brightness:</label> <input type="range" min="1" max="255" value="%Brightness%" class="slider" id="brightness" name="brightness">
+                                    <form action="" method="post" onsubmit="setOutputSettings(this); return false">
+                                        <label>Brightness:</label> <input type="range" min="1" max="255" value="%Brightness%" class="slider" id="brightness" name="brightness"> <br>
+                                        <label>Timeout:</label> <input name= "idleTimeout" type="number" min=0 value="%IdleModeTimeout%"> Set to 0 to disable the timeout<br>
+                                        <label>Timeout State:</label> <select class="mb-2" id="idleMode" name="idleMode">
+                                            <option value="off"%IdleModeIs_off%>Off</option>
+                                            <option value="buzzer"%IdleModeIs_buzzer%>Buzzer Only</option>
+                                            <option value="all"%IdleModeIs_all%>All Lights</option>
+                                            <optgroup label="No Buzzer">
+                                                <option value="red"%IdleModeIs_red%>Red</option>
+                                                <option value="yellow"%IdleModeIs_yellow%>Yellow</option>
+                                                <option value="green"%IdleModeIs_green%>Green</option>
+                                            </optgroup>
+                                            <optgroup label="Buzzer">
+                                                <option value="red_buzzer"%IdleModeIs_red_buzzer%>Red + Buzzer</option>
+                                                <option value="yellow_buzzer"%IdleModeIs_yellow_buzzer%>Yellow + Buzzer</option>
+                                                <option value="green_buzzer"%IdleModeIs_green_buzzer%>Green + Buzzer</option>
+                                            </optgroup>
+                                        </select>
                                         <br/>
                                         <button type="submit">Submit</button>
                                     </form>

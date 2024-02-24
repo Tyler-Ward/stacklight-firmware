@@ -11,6 +11,10 @@
 
 static const char *TAG = "output";
 
+static void outputInactivityTimeout(void* arg);
+
+esp_timer_handle_t outputInactivityTimer;
+
 ledc_channel_config_t ledc_channel[4] = {
     {
         .channel    = LEDC_CHANNEL_0,
@@ -48,6 +52,11 @@ ledc_channel_config_t ledc_channel[4] = {
 
 void SetOutputsDMX(uint16_t offset, uint8_t* data)
 {
+    esp_timer_stop(outputInactivityTimer);
+    if(settingsGetIdleModeTimeout())
+    {
+        esp_timer_start_once(outputInactivityTimer, settingsGetIdleModeTimeout()*1000000);
+    }
     ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,data[offset]*32,0);
     ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,data[offset+1]*32,0);
     ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,data[offset+2]*32,0);
@@ -85,6 +94,11 @@ void SetOutputsMode(char* mode)
     {
         if(strcmp(modes[i].modeName,mode)==0)
         {
+            esp_timer_stop(outputInactivityTimer);
+            if(settingsGetIdleModeTimeout())
+            {
+                esp_timer_start_once(outputInactivityTimer, settingsGetIdleModeTimeout()*1000000);
+            }
             ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,(modes[i].red/255)*brightness,0);
             ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,(modes[i].yellow/255)*brightness,0);
             ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,(modes[i].green/255)*brightness,0);
@@ -94,6 +108,11 @@ void SetOutputsMode(char* mode)
         i++;
     }
     ESP_LOGW(TAG, "No supported mode: %s", mode);
+}
+
+static void outputInactivityTimeout(void* arg)
+{
+    SetOutputsMode(settingsGetidleMode());
 }
 
 void SetupOutputs()
@@ -117,4 +136,16 @@ void SetupOutputs()
     ledc_channel_config(&ledc_channel[3]);
 
     ledc_fade_func_install(0);
+
+    const esp_timer_create_args_t artnetIndicatorTimerArgs = {
+        .callback = &outputInactivityTimeout,
+        /* name is optional, but may help identify the timer when debugging */
+        .name = "outputInactivity"
+    };
+    ESP_ERROR_CHECK(esp_timer_create(&artnetIndicatorTimerArgs, &outputInactivityTimer));
+
+    if(settingsGetIdleModeTimeout())
+    {
+        esp_timer_start_once(outputInactivityTimer, settingsGetIdleModeTimeout()*1000000);
+    }
 }

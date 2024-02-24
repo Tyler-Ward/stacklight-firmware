@@ -73,6 +73,23 @@ static uint16_t getVariable(char* buffer)
     {
         return sprintf(buffer,"%d",settingsGetBrightness());
     }
+    if(strcmp(buffer,"IdleModeTimeout")==0)
+    {
+        return sprintf(buffer,"%d",settingsGetIdleModeTimeout());
+    }
+    if(strncmp(buffer,"IdleModeIs_",11)==0)
+    {
+        char* modename = &buffer[11];
+        if(strcmp(modename,settingsGetidleMode())==0)
+        {
+            return sprintf(buffer," selected");
+        }
+        else
+        {
+            buffer[0]='\0';
+            return 0;
+        }
+    }
     if(strcmp(buffer,"LocateSelectOff")==0)
     {
         if(indicatorsGetLocate())
@@ -279,6 +296,8 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
     buf[ret]='\0';
 
     uint8_t newBrightness = 0;
+    uint16_t newIdleTimeout = 0;
+    char newIdleMode[32];
 
     //get values
     char value[32];
@@ -295,6 +314,23 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
         missingValues+=1;
     }
 
+    memset(value,0,32);
+    if(httpd_query_key_value(buf,"idleTimeout",value,32)==ESP_OK)
+    {
+        newIdleTimeout = strtol(value,&end,10);
+    }
+    else
+    {
+        missingValues+=1;
+    }
+
+    memset(newIdleMode,0,32);
+    if(httpd_query_key_value(buf,"idleMode",newIdleMode,32)!=ESP_OK)
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
+
     if(missingValues>0)
     {
         httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
@@ -303,7 +339,7 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
 
     /* Log data received */
     ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
-    ESP_LOGI(TAG, "Brightness: %d", newBrightness);
+    ESP_LOGI(TAG, "Brightness: %d, timeout: %d, timeout_state: %s", newBrightness, newIdleTimeout, newIdleMode);
     ESP_LOGI(TAG, "====================================");
 
     //check values
@@ -316,6 +352,9 @@ static esp_err_t settings_post_handler(httpd_req_t *req)
         httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
         return ESP_FAIL;
     }
+
+    settingsSetIdleModeTimeout(newIdleTimeout);
+    settingsSetIdleMode(newIdleMode);
 
     // send success
     httpd_resp_send(req, "Success", HTTPD_RESP_USE_STRLEN);

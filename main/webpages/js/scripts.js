@@ -44,12 +44,14 @@ function setOutput(form)
     })
 }
 
-function setHTTPSettings(form)
+function setOutputSettings(form)
 {
     var brightness = form.brightness.value;
+    var idleTimeout = form.idleTimeout.value;
+    var idleMode = form.idleMode.value;
     fetch("/settings", {
         method: "POST",
-        body: "brightness=" + brightness
+        body: "brightness=" + brightness + "&idleTimeout=" + idleTimeout + "&idleMode=" + idleMode
     })
     .then((response) => {
         if (response.ok) {

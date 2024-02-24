@@ -70,3 +70,29 @@ uint8_t settingsGetBrightness();
  * @param newBrightness brightness value 0-255
  */
 void settingsSetBrightness(uint8_t newBrightness);
+
+/**
+ * @brief Get the idle Timout
+ * 
+ * @retval timeout in seconds (0 is disabled)
+ */
+uint16_t settingsGetIdleModeTimeout();
+/**
+ * @brief Set the idle Timout
+ * 
+ * @param newIdleModeTimeout timeout in seconds (0 is disabled)
+ */
+void settingsSetIdleModeTimeout(uint16_t newIdleModeTimeout);
+
+/**
+ * @brief Get the idle mode
+ * 
+ * @retval string containing the idle Mode
+ */
+char* settingsGetidleMode();
+/**
+ * @brief Set the idle mode
+ * 
+ * @param newIdleMode string containing the idle Mode
+ */
+void settingsSetIdleMode(char* newIdleMode);

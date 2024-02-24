@@ -1,6 +1,7 @@
 #include <nvs_flash.h>
 #include <nvs.h>
 #include <esp_log.h>
+#include <string.h>
 
 #include "settings.h"
 
@@ -13,7 +14,10 @@ static uint16_t dmxAddr = 1;
 static uint8_t artnetNet = 0;
 static uint8_t artnetSubNet = 0;
 static uint8_t artnetUniverse = 0;
+
 static uint8_t brightness = 255;
+static uint16_t idleModeTimeout = 0;
+char idleMode[32]; 
 
 void settingsSetup()
 {
@@ -27,13 +31,19 @@ void settingsSetup()
 
     ESP_ERROR_CHECK(err);
 
+    size_t idleModeStrlen = 32;
+    sprintf(idleMode,"off"); //set default idle mode
+
     err = nvs_open("storage", NVS_READWRITE, &nvsHandle);
 
     nvs_get_u16(nvsHandle,"dmxAddr",&dmxAddr);
     nvs_get_u8(nvsHandle,"artnetNet",&artnetNet);
     nvs_get_u8(nvsHandle,"artnetSubNet",&artnetSubNet);
     nvs_get_u8(nvsHandle,"artnetUniverse",&artnetUniverse);
+
     nvs_get_u8(nvsHandle,"brightness",&brightness);
+    nvs_get_u16(nvsHandle,"idleModeTimeout",&idleModeTimeout);
+    nvs_get_str(nvsHandle,"idleMode",idleMode,&idleModeStrlen);
 }
 
 uint16_t settingsGetDmxAddr()
@@ -93,5 +103,29 @@ void settingsSetBrightness(uint8_t newBrightness)
 {
     brightness=newBrightness;
     nvs_set_u8(nvsHandle,"brightness",brightness);
+    nvs_commit(nvsHandle);
+}
+
+uint16_t settingsGetIdleModeTimeout()
+{
+    return idleModeTimeout;
+}
+
+void settingsSetIdleModeTimeout(uint16_t newIdleModeTimeout)
+{
+    idleModeTimeout=newIdleModeTimeout;
+    nvs_set_u16(nvsHandle,"idleModeTimeout",idleModeTimeout);
+    nvs_commit(nvsHandle);
+}
+
+char* settingsGetidleMode()
+{
+    return idleMode;
+}
+
+void settingsSetIdleMode(char* newIdleMode)
+{
+    strcpy(idleMode,newIdleMode);
+    nvs_set_str(nvsHandle,"idleMode",idleMode);
     nvs_commit(nvsHandle);
 }
