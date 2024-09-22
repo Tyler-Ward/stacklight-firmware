@@ -158,8 +158,8 @@ void app_main()
 
     indicatorsSetup();
     indicatorsSetStatus(1);
-    SetupOutputs();
     settingsSetup();
+    SetupOutputs();
 
     //set base mac address from factory set address
     uint8_t baseMac[6];

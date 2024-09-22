@@ -7,8 +7,13 @@
 #include "esp_log.h"
 
 #include "hardware.h"
+#include "settings.h"
 
 static const char *TAG = "output";
+
+static void outputInactivityTimeout(void* arg);
+
+esp_timer_handle_t outputInactivityTimer;
 
 ledc_channel_config_t ledc_channel[4] = {
     {
@@ -47,6 +52,11 @@ ledc_channel_config_t ledc_channel[4] = {
 
 void SetOutputsDMX(uint16_t offset, uint8_t* data)
 {
+    esp_timer_stop(outputInactivityTimer);
+    if(settingsGetIdleModeTimeout())
+    {
+        esp_timer_start_once(outputInactivityTimer, settingsGetIdleModeTimeout()*1000000);
+    }
     ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,data[offset]*32,0);
     ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,data[offset+1]*32,0);
     ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,data[offset+2]*32,0);
@@ -72,25 +82,38 @@ static out_mode_t modes[] = {
     {"red_buzzer", 255*32, 0, 0, 255*32},
     {"yellow_buzzer",0, 255*32, 0, 255*32},
     {"green_buzzer", 0, 0, 255*32, 255*32},
-    {0x00,0,0,0}
+    {0x00,0,0,0,0}
 };
 
 void SetOutputsMode(char* mode)
 {
+    int brightness = settingsGetBrightness();
+
     int i = 0;
     while(modes[i].modeName)
     {
         if(strcmp(modes[i].modeName,mode)==0)
         {
-            ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,modes[i].red,0);
-            ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,modes[i].yellow,0);
-            ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,modes[i].green,0);
+            esp_timer_stop(outputInactivityTimer);
+            if(settingsGetIdleModeTimeout())
+            {
+                esp_timer_start_once(outputInactivityTimer, settingsGetIdleModeTimeout()*1000000);
+            }
+            ledc_set_duty_and_update(ledc_channel[0].speed_mode,ledc_channel[0].channel,(modes[i].red/255)*brightness,0);
+            ledc_set_duty_and_update(ledc_channel[1].speed_mode,ledc_channel[1].channel,(modes[i].yellow/255)*brightness,0);
+            ledc_set_duty_and_update(ledc_channel[2].speed_mode,ledc_channel[2].channel,(modes[i].green/255)*brightness,0);
             ledc_set_duty_and_update(ledc_channel[3].speed_mode,ledc_channel[3].channel,modes[i].buzzer,0);
             return;
         }
         i++;
     }
     ESP_LOGW(TAG, "No supported mode: %s", mode);
+}
+
+static void outputInactivityTimeout(void* arg)
+{
+    ESP_LOGI(TAG, "Inactivity timeout triggered");
+    SetOutputsMode(settingsGetidleMode());
 }
 
 void SetupOutputs()
@@ -114,4 +137,16 @@ void SetupOutputs()
     ledc_channel_config(&ledc_channel[3]);
 
     ledc_fade_func_install(0);
+
+    const esp_timer_create_args_t InactivityTimerArgs = {
+        .callback = &outputInactivityTimeout,
+        /* name is optional, but may help identify the timer when debugging */
+        .name = "outputInactivity"
+    };
+    ESP_ERROR_CHECK(esp_timer_create(&InactivityTimerArgs, &outputInactivityTimer));
+
+    if(settingsGetIdleModeTimeout())
+    {
+        esp_timer_start_once(outputInactivityTimer, settingsGetIdleModeTimeout()*1000000);
+    }
 }

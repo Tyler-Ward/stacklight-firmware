@@ -69,6 +69,27 @@ static uint16_t getVariable(char* buffer)
         return sprintf(buffer,"%02X%02X:%02X%02X%02X%02X",
             rdmUID[0],rdmUID[1],rdmUID[2],rdmUID[3],rdmUID[4],rdmUID[5]);
     }
+    if(strcmp(buffer,"Brightness")==0)
+    {
+        return sprintf(buffer,"%d",settingsGetBrightness());
+    }
+    if(strcmp(buffer,"IdleModeTimeout")==0)
+    {
+        return sprintf(buffer,"%d",settingsGetIdleModeTimeout());
+    }
+    if(strncmp(buffer,"IdleModeIs_",11)==0)
+    {
+        char* modename = &buffer[11];
+        if(strcmp(modename,settingsGetidleMode())==0)
+        {
+            return sprintf(buffer," selected");
+        }
+        else
+        {
+            buffer[0]='\0';
+            return 0;
+        }
+    }
     if(strcmp(buffer,"LocateSelectOff")==0)
     {
         if(indicatorsGetLocate())
@@ -246,10 +267,104 @@ static esp_err_t set_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t page_set_mode = {
+static const httpd_uri_t api_set_mode = {
     .uri = "/set",
     .method = HTTP_POST,
     .handler = set_post_handler,
+    .user_ctx = NULL
+};
+
+static esp_err_t settings_post_handler(httpd_req_t *req)
+{
+    char buf[101];
+    int ret, remaining = req->content_len;
+
+    if(remaining>100)
+    {
+        httpd_resp_set_status(req,"413 Payload Too Large");
+        httpd_resp_send(req,"Post Payload too large",HTTPD_RESP_USE_STRLEN);
+        return ESP_FAIL;
+    }
+
+    /* Read the data for the request */
+    if ((ret = httpd_req_recv(req, buf,MIN(remaining, sizeof(buf)))) <= 0)
+    {
+        return ESP_FAIL;
+    }
+
+    //null terminate string for processing
+    buf[ret]='\0';
+
+    uint8_t newBrightness = 0;
+    uint16_t newIdleTimeout = 0;
+    char newIdleMode[32];
+
+    //get values
+    char value[32];
+    char* end;
+    uint8_t missingValues = 0;
+
+    memset(value,0,32);
+    if(httpd_query_key_value(buf,"brightness",value,32)==ESP_OK)
+    {
+        newBrightness = strtol(value,&end,10);
+    }
+    else
+    {
+        missingValues+=1;
+    }
+
+    memset(value,0,32);
+    if(httpd_query_key_value(buf,"idleTimeout",value,32)==ESP_OK)
+    {
+        newIdleTimeout = strtol(value,&end,10);
+    }
+    else
+    {
+        missingValues+=1;
+    }
+
+    memset(newIdleMode,0,32);
+    if(httpd_query_key_value(buf,"idleMode",newIdleMode,32)!=ESP_OK)
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
+
+    if(missingValues>0)
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
+
+    /* Log data received */
+    ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
+    ESP_LOGI(TAG, "Brightness: %d, timeout: %d, timeout_state: %s", newBrightness, newIdleTimeout, newIdleMode);
+    ESP_LOGI(TAG, "====================================");
+
+    //check values
+    if(newBrightness<=255 && newBrightness>=1)
+    {
+        settingsSetBrightness(newBrightness);
+    }
+    else
+    {
+        httpd_resp_send_err(req,HTTPD_400_BAD_REQUEST,NULL);
+        return ESP_FAIL;
+    }
+
+    settingsSetIdleModeTimeout(newIdleTimeout);
+    settingsSetIdleMode(newIdleMode);
+
+    // send success
+    httpd_resp_send(req, "Success", HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+static const httpd_uri_t api_set_settings = {
+    .uri = "/settings",
+    .method = HTTP_POST,
+    .handler = settings_post_handler,
     .user_ctx = NULL
 };
 
@@ -357,7 +472,7 @@ static esp_err_t artnet_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t artnet_set_mode = {
+static const httpd_uri_t api_set_artnet = {
     .uri = "/artnetConfig",
     .method = HTTP_POST,
     .handler = artnet_post_handler,
@@ -416,7 +531,7 @@ static esp_err_t locate_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
-static const httpd_uri_t locate_set_mode = {
+static const httpd_uri_t api_set_locate = {
     .uri = "/locate",
     .method = HTTP_POST,
     .handler = locate_post_handler,
@@ -458,6 +573,7 @@ void httpSetup()
     static httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.lru_purge_enable = true;
+    config.max_uri_handlers = 10;
 
     if(httpd_start(&server,&config) == ESP_OK)
     {
@@ -467,8 +583,9 @@ void httpSetup()
         httpd_register_uri_handler(server,&page_about);
         httpd_register_uri_handler(server,&page_css);
         httpd_register_uri_handler(server,&page_js);
-        httpd_register_uri_handler(server,&page_set_mode);
-        httpd_register_uri_handler(server,&artnet_set_mode);
-        httpd_register_uri_handler(server,&locate_set_mode);
+        httpd_register_uri_handler(server,&api_set_mode);
+        httpd_register_uri_handler(server,&api_set_settings);
+        httpd_register_uri_handler(server,&api_set_artnet);
+        httpd_register_uri_handler(server,&api_set_locate);
     }
 }
