@@ -137,12 +137,12 @@ void SetupOutputs()
 
     ledc_fade_func_install(0);
 
-    const esp_timer_create_args_t artnetIndicatorTimerArgs = {
+    const esp_timer_create_args_t InactivityTimerArgs = {
         .callback = &outputInactivityTimeout,
         /* name is optional, but may help identify the timer when debugging */
         .name = "outputInactivity"
     };
-    ESP_ERROR_CHECK(esp_timer_create(&artnetIndicatorTimerArgs, &outputInactivityTimer));
+    ESP_ERROR_CHECK(esp_timer_create(&InactivityTimerArgs, &outputInactivityTimer));
 
     if(settingsGetIdleModeTimeout())
     {
