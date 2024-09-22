@@ -112,6 +112,7 @@ void SetOutputsMode(char* mode)
 
 static void outputInactivityTimeout(void* arg)
 {
+    ESP_LOGI(TAG, "Inactivity timeout triggered");
     SetOutputsMode(settingsGetidleMode());
 }
 
